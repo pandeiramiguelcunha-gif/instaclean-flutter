@@ -6,13 +6,13 @@ workflows:
     environment:
       flutter: stable
     scripts:
-      - name: Limpeza de Cache e Erros Antigos
+      - name: Criar Estrutura Flutter Completa
+        script: | 
+          flutter create . --platforms android --org com.instaclean
+      - name: Limpeza de Cache e Instalar Dependências
         script: | 
           flutter clean
           flutter pub get
-      - name: Criar Pasta Android Moderna (v2)
-        script: | 
-          flutter create . --platforms android --org com.instaclean
       - name: Gerar APK Final
         script: | 
           flutter build apk --debug
