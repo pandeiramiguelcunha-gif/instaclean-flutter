@@ -15,7 +15,7 @@ class _SplashScreenState extends State<SplashScreen> {
     _navigateToHome();
   }
 
-  _navigateToHome() async {
+  Future<void> _navigateToHome() async {
     await Future.delayed(const Duration(seconds: 3));
     if (mounted) {
       Navigator.pushReplacement(
@@ -32,14 +32,14 @@ class _SplashScreenState extends State<SplashScreen> {
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(
+          children: const [
+            Icon(
               Icons.cleaning_services,
               size: 100,
               color: Colors.white,
             ),
-            const SizedBox(height: 20),
-            const Text(
+            SizedBox(height: 20),
+            Text(
               'InstaClean',
               style: TextStyle(
                 fontSize: 32,
@@ -47,16 +47,16 @@ class _SplashScreenState extends State<SplashScreen> {
                 color: Colors.white,
               ),
             ),
-            const SizedBox(height: 10),
-            const Text(
+            SizedBox(height: 10),
+            Text(
               'Limpeza rápida e eficiente',
               style: TextStyle(
                 fontSize: 16,
                 color: Colors.white70,
               ),
             ),
-            const SizedBox(height: 40),
-            const CircularProgressIndicator(
+            SizedBox(height: 40),
+            CircularProgressIndicator(
               valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
             ),
           ],

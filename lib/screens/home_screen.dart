@@ -39,9 +39,6 @@ class HomeScreen extends StatelessWidget {
                 title: 'Agendar Limpeza',
                 subtitle: 'Marque um serviço de limpeza',
                 color: Colors.blue,
-                onTap: () {
-                  _showSnackBar(context, 'Funcionalidade em desenvolvimento');
-                },
               ),
               const SizedBox(height: 12),
               _buildServiceCard(
@@ -50,9 +47,6 @@ class HomeScreen extends StatelessWidget {
                 title: 'Histórico',
                 subtitle: 'Veja os seus agendamentos',
                 color: Colors.green,
-                onTap: () {
-                  _showSnackBar(context, 'Funcionalidade em desenvolvimento');
-                },
               ),
               const SizedBox(height: 12),
               _buildServiceCard(
@@ -61,9 +55,6 @@ class HomeScreen extends StatelessWidget {
                 title: 'Minha Conta',
                 subtitle: 'Gerir perfil e definições',
                 color: Colors.orange,
-                onTap: () {
-                  _showSnackBar(context, 'Funcionalidade em desenvolvimento');
-                },
               ),
               const SizedBox(height: 12),
               _buildServiceCard(
@@ -72,9 +63,6 @@ class HomeScreen extends StatelessWidget {
                 title: 'Suporte',
                 subtitle: 'Precisa de ajuda?',
                 color: Colors.purple,
-                onTap: () {
-                  _showSnackBar(context, 'Funcionalidade em desenvolvimento');
-                },
               ),
             ],
           ),
@@ -82,7 +70,9 @@ class HomeScreen extends StatelessWidget {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
-          _showSnackBar(context, 'Agendar nova limpeza');
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Agendar nova limpeza')),
+          );
         },
         icon: const Icon(Icons.add),
         label: const Text('Nova Limpeza'),
@@ -96,7 +86,6 @@ class HomeScreen extends StatelessWidget {
     required String title,
     required String subtitle,
     required Color color,
-    required VoidCallback onTap,
   }) {
     return Card(
       elevation: 3,
@@ -122,16 +111,11 @@ class HomeScreen extends StatelessWidget {
         ),
         subtitle: Text(subtitle),
         trailing: Icon(Icons.arrow_forward_ios, color: Colors.grey[400], size: 18),
-        onTap: onTap,
-      ),
-    );
-  }
-
-  void _showSnackBar(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        duration: const Duration(seconds: 2),
+        onTap: () {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('$title - Em desenvolvimento')),
+          );
+        },
       ),
     );
   }

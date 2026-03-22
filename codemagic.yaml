@@ -2,32 +2,22 @@ workflows:
   instaclean-workflow:
     name: Build InstaClean Android
     max_build_duration: 60
-    instance_type: mac_mini_m1
+    instance_type: mac_mini_m2
     environment:
       flutter: stable
       java: 17
     scripts:
-      - name: Criar Estrutura Flutter
-        script: | 
-          flutter create . --platforms android --org com.instaclean
+      - name: Criar Projeto Flutter
+        script: |
+          flutter create . --platforms android --org com.instaclean --project-name instaclean
           
-      - name: Limpar Cache
-        script: | 
-          flutter clean
-          
-      - name: Instalar Dependências
-        script: | 
+      - name: Instalar Dependencias
+        script: |
           flutter pub get
           
-      - name: Analisar Código
-        script: | 
-          flutter analyze || true
-          
-      - name: Build APK Debug
-        script: | 
+      - name: Build APK
+        script: |
           flutter build apk --debug
           
     artifacts:
       - build/**/outputs/**/*.apk
-      - build/**/outputs/**/mapping.txt
-      - flutter_drive.log
