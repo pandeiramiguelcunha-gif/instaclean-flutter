@@ -66,13 +66,27 @@ class _DashboardScreenState extends State<DashboardScreen>
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text(
-          'InstaClean PMC',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 24,
-          ),
+        title: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: const [
+            Text(
+              'InstaClean',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 24,
+              ),
+            ),
+            Text(
+              'PMC',
+              style: TextStyle(
+                color: Color(0xFF00E676),
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+                letterSpacing: 2,
+              ),
+            ),
+          ],
         ),
         centerTitle: true,
         actions: [
