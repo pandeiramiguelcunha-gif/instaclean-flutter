@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
-import 'screens/splash_screen.dart';
+import 'screens/dashboard_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const MyApp());
+  runApp(const InstaCleanApp());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class InstaCleanApp extends StatelessWidget {
+  const InstaCleanApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -15,10 +15,16 @@ class MyApp extends StatelessWidget {
       title: 'InstaClean',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+        brightness: Brightness.dark,
+        scaffoldBackgroundColor: const Color(0xFF121212),
+        colorScheme: const ColorScheme.dark(
+          primary: Color(0xFF00E676),
+          secondary: Color(0xFF00BCD4),
+          surface: Color(0xFF1E1E1E),
+        ),
         useMaterial3: true,
       ),
-      home: const SplashScreen(),
+      home: const DashboardScreen(),
     );
   }
 }
