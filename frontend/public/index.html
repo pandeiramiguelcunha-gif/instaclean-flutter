@@ -7,7 +7,6 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        
         body {
             font-family: 'Segoe UI', Roboto, sans-serif;
             background: #0a0a0a;
@@ -17,7 +16,6 @@
             align-items: center;
             padding: 20px;
         }
-        
         .phone-frame {
             width: 375px;
             height: 780px;
@@ -26,7 +24,6 @@
             padding: 12px;
             box-shadow: 0 25px 60px rgba(0,230,118,0.15), 0 0 0 2px #333;
         }
-        
         .phone-screen {
             width: 100%;
             height: 100%;
@@ -35,11 +32,9 @@
             overflow: hidden;
             position: relative;
         }
-        
         .screen { display: none; height: 100%; flex-direction: column; }
         .screen.active { display: flex; }
         
-        /* App Bar */
         .app-bar {
             padding: 50px 20px 16px;
             display: flex;
@@ -50,376 +45,382 @@
         .app-bar .back-btn { color: #fff; font-size: 18px; cursor: pointer; width: 40px; }
         .app-bar .settings-btn { color: rgba(255,255,255,0.7); font-size: 20px; cursor: pointer; width: 40px; text-align: right; }
         
-        /* Dashboard */
         .dashboard-content { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 20px; }
-        
         .gauge-container { position: relative; width: 250px; height: 250px; margin: 20px 0; }
-        
         .gauge-bg {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
+            position: absolute; width: 100%; height: 100%; border-radius: 50%;
             background: conic-gradient(from 135deg, #2D2D2D 0deg, #2D2D2D 270deg, transparent 270deg);
         }
-        
         .gauge-progress {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
-            background: conic-gradient(from 135deg, #00E676 0deg, #00BCD4 135deg, #2196F3 180deg, transparent 180deg);
-            transition: all 1.5s ease-out;
+            position: absolute; width: 100%; height: 100%; border-radius: 50%;
+            background: conic-gradient(from 135deg, #00E676 0deg, #00BCD4 90deg, #2196F3 180deg, transparent 180deg);
         }
-        
         .gauge-inner {
-            position: absolute;
-            top: 25px; left: 25px; right: 25px; bottom: 25px;
-            background: #1A1A1A;
-            border-radius: 50%;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
+            position: absolute; top: 25px; left: 25px; right: 25px; bottom: 25px;
+            background: #1A1A1A; border-radius: 50%;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
         }
-        
         .gauge-percent { color: #fff; font-size: 48px; font-weight: bold; }
         .gauge-details { color: rgba(255,255,255,0.6); font-size: 14px; margin-top: 4px; }
         .gauge-label { color: rgba(255,255,255,0.7); font-size: 16px; margin-top: 16px; }
         
-        /* Botão principal */
         .main-btn {
-            width: 100%;
-            padding: 18px;
-            border: none;
-            border-radius: 30px;
+            width: 100%; padding: 18px; border: none; border-radius: 30px;
             background: linear-gradient(90deg, #00E676, #00BCD4);
-            color: #fff;
-            font-size: 18px;
-            font-weight: bold;
-            cursor: pointer;
-            margin-top: auto;
-            margin-bottom: 30px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
+            color: #fff; font-size: 18px; font-weight: bold; cursor: pointer;
+            margin-top: auto; margin-bottom: 30px;
+            display: flex; align-items: center; justify-content: center; gap: 12px;
             box-shadow: 0 8px 25px rgba(0,230,118,0.4);
-            transition: transform 0.2s, box-shadow 0.2s;
         }
-        .main-btn:hover { transform: scale(1.02); box-shadow: 0 12px 35px rgba(0,230,118,0.5); }
         .main-btn:active { transform: scale(0.98); }
-        .main-btn.loading { background: linear-gradient(90deg, #555, #444); box-shadow: none; pointer-events: none; }
+        .main-btn.loading { background: linear-gradient(90deg, #555, #444); box-shadow: none; }
         
-        /* Results Screen */
-        .results-content { flex: 1; padding: 20px; overflow-y: auto; }
-        
+        .results-content { flex: 1; padding: 16px; overflow-y: auto; }
         .summary-card {
-            background: #1E1E1E;
-            border-radius: 20px;
-            padding: 20px;
-            text-align: center;
-            border: 1px solid rgba(0,230,118,0.3);
-            margin-bottom: 20px;
+            background: #1E1E1E; border-radius: 20px; padding: 20px;
+            text-align: center; border: 1px solid rgba(0,230,118,0.3); margin-bottom: 16px;
         }
-        .summary-card h2 { color: #fff; font-size: 24px; margin-bottom: 8px; }
+        .summary-card h2 { color: #fff; font-size: 20px; margin-bottom: 8px; }
         .summary-card p { color: #00E676; font-size: 16px; }
         
-        .categories-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 16px;
+        .category-list { display: flex; flex-direction: column; gap: 12px; }
+        .category-item {
+            background: #1E1E1E; border-radius: 16px; padding: 16px;
+            display: flex; align-items: center; cursor: pointer;
+            border: 1px solid transparent; transition: all 0.2s;
+        }
+        .category-item:active { transform: scale(0.98); }
+        .category-item.blue { border-color: rgba(33,150,243,0.3); }
+        .category-item.purple { border-color: rgba(156,39,176,0.3); }
+        .category-item.orange { border-color: rgba(255,152,0,0.3); }
+        .category-item.green { border-color: rgba(76,175,80,0.3); }
+        .category-item.pink { border-color: rgba(233,30,99,0.3); }
+        
+        .cat-icon {
+            width: 50px; height: 50px; border-radius: 14px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 24px; margin-right: 14px;
+        }
+        .cat-icon.blue { background: rgba(33,150,243,0.2); color: #2196F3; }
+        .cat-icon.purple { background: rgba(156,39,176,0.2); color: #9C27B0; }
+        .cat-icon.orange { background: rgba(255,152,0,0.2); color: #FF9800; }
+        .cat-icon.green { background: rgba(76,175,80,0.2); color: #4CAF50; }
+        .cat-icon.pink { background: rgba(233,30,99,0.2); color: #E91E63; }
+        
+        .cat-info { flex: 1; }
+        .cat-name { color: #fff; font-size: 16px; font-weight: bold; }
+        .cat-stats { color: rgba(255,255,255,0.6); font-size: 13px; margin-top: 2px; }
+        .cat-size { text-align: right; }
+        .cat-size span { font-weight: bold; font-size: 14px; }
+        .cat-size.blue span { color: #2196F3; }
+        .cat-size.purple span { color: #9C27B0; }
+        .cat-size.orange span { color: #FF9800; }
+        .cat-size.green span { color: #4CAF50; }
+        .cat-size.pink span { color: #E91E63; }
+        .cat-arrow { color: rgba(255,255,255,0.5); margin-left: 8px; }
+        
+        /* Detail Screen */
+        .tabs {
+            display: flex; border-bottom: 1px solid #333; margin: 0 20px;
+        }
+        .tab {
+            flex: 1; padding: 14px; text-align: center; color: rgba(255,255,255,0.5);
+            cursor: pointer; border-bottom: 2px solid transparent; font-size: 14px;
+        }
+        .tab.active { color: #2196F3; border-color: #2196F3; }
+        .tab.active.purple { color: #9C27B0; border-color: #9C27B0; }
+        .tab.active.orange { color: #FF9800; border-color: #FF9800; }
+        .tab.active.green { color: #4CAF50; border-color: #4CAF50; }
+        .tab.active.pink { color: #E91E63; border-color: #E91E63; }
+        
+        .items-grid {
+            display: grid; grid-template-columns: repeat(3, 1fr);
+            gap: 8px; padding: 16px; flex: 1; overflow-y: auto;
+            align-content: start;
+        }
+        .item-tile {
+            aspect-ratio: 1; background: #1E1E1E; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            position: relative; font-size: 28px; color: rgba(255,255,255,0.4);
+        }
+        .item-tile.duplicate { border: 2px solid rgba(255,0,0,0.5); }
+        .item-tile .delete-badge {
+            position: absolute; top: 4px; right: 4px;
+            background: #f44336; width: 18px; height: 18px;
+            border-radius: 50%; display: flex; align-items: center;
+            justify-content: center; font-size: 10px; color: #fff;
         }
         
-        .category-card {
-            background: #1E1E1E;
-            border-radius: 20px;
-            padding: 20px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s;
-            border: 1px solid transparent;
+        .detail-btn {
+            margin: 16px 20px 30px; padding: 16px; border: none; border-radius: 28px;
+            color: #fff; font-size: 16px; font-weight: bold; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
         }
-        .category-card:hover { transform: translateY(-2px); }
-        .category-card.blue { border-color: rgba(33,150,243,0.3); }
-        .category-card.purple { border-color: rgba(156,39,176,0.3); }
-        .category-card.orange { border-color: rgba(255,152,0,0.3); }
-        .category-card.green { border-color: rgba(76,175,80,0.3); }
-        .category-card.empty { background: #1A1A1A; border-color: #333; pointer-events: none; }
+        .detail-btn.blue { background: linear-gradient(90deg, #2196F3, #1976D2); }
+        .detail-btn.purple { background: linear-gradient(90deg, #9C27B0, #7B1FA2); }
+        .detail-btn.orange { background: linear-gradient(90deg, #FF9800, #F57C00); }
+        .detail-btn.green { background: linear-gradient(90deg, #4CAF50, #388E3C); }
+        .detail-btn.pink { background: linear-gradient(90deg, #E91E63, #C2185B); }
+        .detail-btn.disabled { background: #444 !important; pointer-events: none; }
         
-        .category-icon {
-            width: 56px;
-            height: 56px;
-            border-radius: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 12px;
-            font-size: 26px;
-        }
-        .category-icon.blue { background: rgba(33,150,243,0.2); color: #2196F3; }
-        .category-icon.purple { background: rgba(156,39,176,0.2); color: #9C27B0; }
-        .category-icon.orange { background: rgba(255,152,0,0.2); color: #FF9800; }
-        .category-icon.green { background: rgba(76,175,80,0.2); color: #4CAF50; }
-        .category-icon.empty { background: #333; color: #666; }
-        
-        .category-title { color: #fff; font-size: 14px; font-weight: 600; margin-bottom: 4px; }
-        .category-count { font-size: 16px; font-weight: bold; }
-        .category-count.blue { color: #2196F3; }
-        .category-count.purple { color: #9C27B0; }
-        .category-count.orange { color: #FF9800; }
-        .category-count.green { color: #4CAF50; }
-        .category-count.empty { color: #666; }
-        .category-size { color: rgba(255,255,255,0.5); font-size: 12px; }
-        
-        /* Toast */
         .toast {
-            position: absolute;
-            bottom: 100px;
-            left: 20px;
-            right: 20px;
-            background: #2D2D2D;
-            color: #fff;
-            padding: 16px 20px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            opacity: 0;
-            transform: translateY(20px);
-            transition: all 0.3s;
-            z-index: 100;
+            position: absolute; bottom: 100px; left: 20px; right: 20px;
+            background: #2D2D2D; color: #fff; padding: 16px 20px;
+            border-radius: 12px; display: flex; align-items: center; gap: 12px;
+            opacity: 0; transform: translateY(20px); transition: all 0.3s; z-index: 100;
         }
         .toast.show { opacity: 1; transform: translateY(0); }
         .toast i { color: #00E676; }
         
         .preview-label {
-            position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
             background: linear-gradient(90deg, #00E676, #00BCD4);
-            color: #000;
-            padding: 10px 24px;
-            border-radius: 25px;
-            font-size: 14px;
-            font-weight: bold;
-            box-shadow: 0 4px 15px rgba(0,230,118,0.3);
+            color: #000; padding: 10px 24px; border-radius: 25px;
+            font-size: 14px; font-weight: bold;
         }
-        
         .spinner { animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
+        
+        .empty-state {
+            flex: 1; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; color: rgba(255,255,255,0.4);
+        }
+        .empty-state i { font-size: 60px; margin-bottom: 16px; }
     </style>
 </head>
 <body>
-    <div class="preview-label">📱 Preview InstaClean - Tema Escuro</div>
+    <div class="preview-label">📱 Preview InstaClean - Com Músicas</div>
     
     <div class="phone-frame">
         <div class="phone-screen">
             
-            <!-- Dashboard Screen -->
+            <!-- Dashboard -->
             <div class="screen active" id="dashboardScreen">
                 <div class="app-bar">
                     <div class="back-btn"></div>
                     <h1>InstaClean</h1>
                     <div class="settings-btn"><i class="fas fa-cog"></i></div>
                 </div>
-                
                 <div class="dashboard-content">
                     <div class="gauge-container">
                         <div class="gauge-bg"></div>
-                        <div class="gauge-progress" id="gaugeProgress"></div>
+                        <div class="gauge-progress"></div>
                         <div class="gauge-inner">
-                            <div class="gauge-percent" id="gaugePercent">0%</div>
+                            <div class="gauge-percent">67.5%</div>
                             <div class="gauge-details">86.4 GB de 128 GB</div>
                         </div>
                     </div>
                     <div class="gauge-label">Espaço Utilizado</div>
-                    
-                    <button class="main-btn" id="analyzeBtn" onclick="startAnalysis()">
-                        <i class="fas fa-search"></i>
-                        Analisar Agora
+                    <button class="main-btn" onclick="goToResults()">
+                        <i class="fas fa-search"></i> Analisar Agora
                     </button>
                 </div>
-                
-                <div class="toast" id="toast"></div>
             </div>
             
-            <!-- Results Screen -->
+            <!-- Results -->
             <div class="screen" id="resultsScreen">
                 <div class="app-bar">
-                    <div class="back-btn" onclick="goBack()"><i class="fas fa-chevron-left"></i></div>
+                    <div class="back-btn" onclick="goToDashboard()"><i class="fas fa-chevron-left"></i></div>
                     <h1>Resultados</h1>
                     <div class="settings-btn"></div>
                 </div>
-                
                 <div class="results-content">
                     <div class="summary-card">
-                        <h2 id="totalItems">223 itens encontrados</h2>
-                        <p id="potentialSavings">Pode libertar 2.4 GB</p>
+                        <h2 id="totalDuplicates">251 duplicados encontrados</h2>
+                        <p id="totalSize">Pode libertar 2.9 GB</p>
                     </div>
-                    
-                    <div class="categories-grid">
-                        <div class="category-card blue" id="photosCard" onclick="cleanCategory('photos')">
-                            <div class="category-icon blue"><i class="fas fa-images"></i></div>
-                            <div class="category-title">Fotos Duplicadas</div>
-                            <div class="category-count blue" id="photosCount">47 itens</div>
-                            <div class="category-size">850 MB</div>
+                    <div class="category-list">
+                        <div class="category-item blue" onclick="openCategory('photos')">
+                            <div class="cat-icon blue"><i class="fas fa-images"></i></div>
+                            <div class="cat-info">
+                                <div class="cat-name">Fotos</div>
+                                <div class="cat-stats"><span id="photosStats">245 total • 47 duplicados</span></div>
+                            </div>
+                            <div class="cat-size blue"><span id="photosSize">850 MB</span></div>
+                            <i class="fas fa-chevron-right cat-arrow"></i>
                         </div>
-                        
-                        <div class="category-card purple" id="screenshotsCard" onclick="cleanCategory('screenshots')">
-                            <div class="category-icon purple"><i class="fas fa-mobile-alt"></i></div>
-                            <div class="category-title">Screenshots</div>
-                            <div class="category-count purple" id="screenshotsCount">123 itens</div>
-                            <div class="category-size">620 MB</div>
+                        <div class="category-item purple" onclick="openCategory('screenshots')">
+                            <div class="cat-icon purple"><i class="fas fa-mobile-alt"></i></div>
+                            <div class="cat-info">
+                                <div class="cat-name">Screenshots</div>
+                                <div class="cat-stats"><span id="screenshotsStats">310 total • 123 duplicados</span></div>
+                            </div>
+                            <div class="cat-size purple"><span id="screenshotsSize">620 MB</span></div>
+                            <i class="fas fa-chevron-right cat-arrow"></i>
                         </div>
-                        
-                        <div class="category-card orange" id="videosCard" onclick="cleanCategory('videos')">
-                            <div class="category-icon orange"><i class="fas fa-video"></i></div>
-                            <div class="category-title">Vídeos</div>
-                            <div class="category-count orange" id="videosCount">18 itens</div>
-                            <div class="category-size">980 MB</div>
+                        <div class="category-item orange" onclick="openCategory('videos')">
+                            <div class="cat-icon orange"><i class="fas fa-video"></i></div>
+                            <div class="cat-info">
+                                <div class="cat-name">Vídeos</div>
+                                <div class="cat-stats"><span id="videosStats">85 total • 18 duplicados</span></div>
+                            </div>
+                            <div class="cat-size orange"><span id="videosSize">980 MB</span></div>
+                            <i class="fas fa-chevron-right cat-arrow"></i>
                         </div>
-                        
-                        <div class="category-card green" id="contactsCard" onclick="cleanCategory('contacts')">
-                            <div class="category-icon green"><i class="fas fa-users"></i></div>
-                            <div class="category-title">Contactos</div>
-                            <div class="category-count green" id="contactsCount">35 itens</div>
-                            <div class="category-size">12 MB</div>
+                        <div class="category-item green" onclick="openCategory('contacts')">
+                            <div class="cat-icon green"><i class="fas fa-users"></i></div>
+                            <div class="cat-info">
+                                <div class="cat-name">Contactos</div>
+                                <div class="cat-stats"><span id="contactsStats">520 total • 35 duplicados</span></div>
+                            </div>
+                            <div class="cat-size green"><span id="contactsSize">12 MB</span></div>
+                            <i class="fas fa-chevron-right cat-arrow"></i>
+                        </div>
+                        <div class="category-item pink" onclick="openCategory('music')">
+                            <div class="cat-icon pink"><i class="fas fa-music"></i></div>
+                            <div class="cat-info">
+                                <div class="cat-name">Músicas</div>
+                                <div class="cat-stats"><span id="musicStats">156 total • 28 duplicados</span></div>
+                            </div>
+                            <div class="cat-size pink"><span id="musicSize">540 MB</span></div>
+                            <i class="fas fa-chevron-right cat-arrow"></i>
                         </div>
                     </div>
                 </div>
-                
-                <div style="padding: 20px;">
-                    <button class="main-btn" id="cleanAllBtn" onclick="cleanAll()">
-                        <i class="fas fa-broom"></i>
-                        Limpar Tudo
-                    </button>
-                </div>
-                
+                <button class="main-btn" style="margin: 16px 20px 30px;" onclick="cleanAll()">
+                    <i class="fas fa-broom"></i> Limpar Todos os Duplicados
+                </button>
                 <div class="toast" id="resultsToast"></div>
+            </div>
+            
+            <!-- Category Detail -->
+            <div class="screen" id="detailScreen">
+                <div class="app-bar">
+                    <div class="back-btn" onclick="goToResults()"><i class="fas fa-chevron-left"></i></div>
+                    <h1 id="detailTitle">Fotos</h1>
+                    <div class="settings-btn"></div>
+                </div>
+                <div class="tabs" id="detailTabs">
+                    <div class="tab active" onclick="switchTab(0)">Todas as Fotos</div>
+                    <div class="tab" onclick="switchTab(1)">Fotos Duplicadas</div>
+                </div>
+                <div class="items-grid" id="itemsGrid"></div>
+                <button class="detail-btn blue" id="detailBtn" onclick="cleanCategory()">
+                    Eliminar 47 Duplicados (850 MB)
+                </button>
+                <div class="toast" id="detailToast"></div>
             </div>
             
         </div>
     </div>
     
     <script>
-        // Estado da aplicação
-        let state = {
-            photos: { count: 47, size: 850 },
-            screenshots: { count: 123, size: 620 },
-            videos: { count: 18, size: 980 },
-            contacts: { count: 35, size: 12 }
+        const state = {
+            photos: { all: 245, dup: 47, allSize: 1200, dupSize: 850 },
+            screenshots: { all: 310, dup: 123, allSize: 890, dupSize: 620 },
+            videos: { all: 85, dup: 18, allSize: 4500, dupSize: 980 },
+            contacts: { all: 520, dup: 35, allSize: 45, dupSize: 12 },
+            music: { all: 156, dup: 28, allSize: 2800, dupSize: 540 }
         };
         
-        // Animação do gauge
-        setTimeout(() => {
-            document.getElementById('gaugeProgress').style.background = 
-                'conic-gradient(from 135deg, #00E676 0deg, #00BCD4 90deg, #2196F3 180deg, transparent 180deg)';
-            animatePercent(0, 67.5);
-        }, 500);
+        const catConfig = {
+            photos: { name: 'Fotos', icon: 'fa-image', color: 'blue', allTab: 'Todas as Fotos', dupTab: 'Fotos Duplicadas' },
+            screenshots: { name: 'Screenshots', icon: 'fa-mobile-alt', color: 'purple', allTab: 'Todos os Screenshots', dupTab: 'Screenshots Duplicados' },
+            videos: { name: 'Vídeos', icon: 'fa-play-circle', color: 'orange', allTab: 'Todos os Vídeos', dupTab: 'Vídeos Duplicados' },
+            contacts: { name: 'Contactos', icon: 'fa-user', color: 'green', allTab: 'Todos os Contactos', dupTab: 'Contactos Duplicados' },
+            music: { name: 'Músicas', icon: 'fa-music', color: 'pink', allTab: 'Todas as Músicas', dupTab: 'Músicas Duplicadas' }
+        };
         
-        function animatePercent(from, to) {
-            let current = from;
-            const interval = setInterval(() => {
-                current += 1;
-                if (current >= to) {
-                    current = to;
-                    clearInterval(interval);
+        let currentCategory = 'photos';
+        let currentTab = 0;
+        
+        function showScreen(id) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        }
+        
+        function goToDashboard() { showScreen('dashboardScreen'); }
+        function goToResults() { updateResultsUI(); showScreen('resultsScreen'); }
+        
+        function openCategory(cat) {
+            currentCategory = cat;
+            currentTab = 0;
+            const cfg = catConfig[cat];
+            document.getElementById('detailTitle').textContent = cfg.name;
+            
+            const tabs = document.getElementById('detailTabs');
+            tabs.innerHTML = `
+                <div class="tab active ${cfg.color}" onclick="switchTab(0)">${cfg.allTab}</div>
+                <div class="tab" onclick="switchTab(1)">${cfg.dupTab}</div>
+            `;
+            
+            updateDetailUI();
+            showScreen('detailScreen');
+        }
+        
+        function switchTab(idx) {
+            currentTab = idx;
+            const cfg = catConfig[currentCategory];
+            document.querySelectorAll('.tab').forEach((t, i) => {
+                t.classList.remove('active', cfg.color);
+                if (i === idx) t.classList.add('active', cfg.color);
+            });
+            updateDetailUI();
+        }
+        
+        function updateDetailUI() {
+            const cat = state[currentCategory];
+            const cfg = catConfig[currentCategory];
+            const count = currentTab === 0 ? cat.all : cat.dup;
+            const grid = document.getElementById('itemsGrid');
+            const btn = document.getElementById('detailBtn');
+            
+            if (count === 0) {
+                grid.innerHTML = `<div class="empty-state" style="grid-column: span 3;">
+                    <i class="fas fa-check-circle"></i>
+                    <span>${currentTab === 0 ? 'Nenhum item' : 'Sem duplicados!'}</span>
+                </div>`;
+            } else {
+                let html = '';
+                for (let i = 0; i < Math.min(count, 30); i++) {
+                    html += `<div class="item-tile ${currentTab === 1 ? 'duplicate' : ''}">
+                        <i class="fas ${cfg.icon}"></i>
+                        ${currentTab === 1 ? '<div class="delete-badge"><i class="fas fa-times"></i></div>' : ''}
+                    </div>`;
                 }
-                document.getElementById('gaugePercent').textContent = current.toFixed(1) + '%';
-            }, 20);
-        }
-        
-        function startAnalysis() {
-            const btn = document.getElementById('analyzeBtn');
-            btn.classList.add('loading');
-            btn.innerHTML = '<i class="fas fa-spinner spinner"></i> A Analisar...';
-            
-            setTimeout(() => {
-                btn.classList.remove('loading');
-                btn.innerHTML = '<i class="fas fa-search"></i> Analisar Agora';
-                document.getElementById('dashboardScreen').classList.remove('active');
-                document.getElementById('resultsScreen').classList.add('active');
-                updateResultsUI();
-            }, 2500);
-        }
-        
-        function goBack() {
-            document.getElementById('resultsScreen').classList.remove('active');
-            document.getElementById('dashboardScreen').classList.add('active');
-        }
-        
-        function cleanCategory(category) {
-            const card = document.getElementById(category + 'Card');
-            if (card.classList.contains('empty')) return;
-            
-            const sizeCleaned = state[category].size;
-            state[category].count = 0;
-            state[category].size = 0;
-            
-            updateResultsUI();
-            showResultsToast(`Limpeza concluída! ${sizeCleaned} MB libertados`);
-        }
-        
-        function cleanAll() {
-            const btn = document.getElementById('cleanAllBtn');
-            btn.classList.add('loading');
-            btn.innerHTML = '<i class="fas fa-spinner spinner"></i> A Limpar...';
-            
-            let totalSize = 0;
-            for (let cat in state) {
-                totalSize += state[cat].size;
-                state[cat].count = 0;
-                state[cat].size = 0;
+                grid.innerHTML = html;
             }
             
-            setTimeout(() => {
-                btn.classList.remove('loading');
-                btn.innerHTML = '<i class="fas fa-check-circle"></i> Tudo Limpo!';
-                updateResultsUI();
-                showResultsToast(`Limpeza total! ${totalSize} MB libertados`);
-            }, 2000);
+            btn.className = `detail-btn ${cfg.color} ${cat.dup === 0 ? 'disabled' : ''}`;
+            btn.textContent = cat.dup === 0 
+                ? 'Sem Duplicados' 
+                : `Eliminar ${cat.dup} Duplicados (${cat.dupSize} MB)`;
+        }
+        
+        function cleanCategory() {
+            const cat = state[currentCategory];
+            if (cat.dup === 0) return;
+            
+            const cleaned = cat.dupSize;
+            cat.dup = 0;
+            cat.dupSize = 0;
+            
+            updateDetailUI();
+            showToast('detailToast', `Limpeza concluída! ${cleaned} MB libertados`);
         }
         
         function updateResultsUI() {
-            // Atualizar contadores
-            updateCard('photos', 'blue');
-            updateCard('screenshots', 'purple');
-            updateCard('videos', 'orange');
-            updateCard('contacts', 'green');
-            
-            // Atualizar resumo
-            let totalItems = 0;
-            let totalSize = 0;
-            for (let cat in state) {
-                totalItems += state[cat].count;
-                totalSize += state[cat].size;
+            let totalDup = 0, totalSize = 0;
+            for (let k in state) {
+                totalDup += state[k].dup;
+                totalSize += state[k].dupSize;
+                document.getElementById(k + 'Stats').textContent = `${state[k].all} total • ${state[k].dup} duplicados`;
+                document.getElementById(k + 'Size').textContent = state[k].dupSize + ' MB';
             }
-            
-            document.getElementById('totalItems').textContent = 
-                totalItems === 0 ? 'Tudo limpo!' : totalItems + ' itens encontrados';
-            document.getElementById('potentialSavings').textContent = 
-                totalItems === 0 ? 'Memória optimizada' : 'Pode libertar ' + (totalSize / 1024).toFixed(1) + ' GB';
+            document.getElementById('totalDuplicates').textContent = totalDup === 0 ? 'Tudo limpo!' : `${totalDup} duplicados encontrados`;
+            document.getElementById('totalSize').textContent = totalDup === 0 ? 'Memória optimizada' : `Pode libertar ${(totalSize/1024).toFixed(1)} GB`;
         }
         
-        function updateCard(category, colorClass) {
-            const card = document.getElementById(category + 'Card');
-            const count = document.getElementById(category + 'Count');
-            const icon = card.querySelector('.category-icon');
-            
-            if (state[category].count === 0) {
-                card.className = 'category-card empty';
-                icon.className = 'category-icon empty';
-                icon.innerHTML = '<i class="fas fa-check-circle"></i>';
-                count.textContent = 'Limpo';
-                count.className = 'category-count empty';
-            }
+        function cleanAll() {
+            let total = 0;
+            for (let k in state) { total += state[k].dupSize; state[k].dup = 0; state[k].dupSize = 0; }
+            updateResultsUI();
+            showToast('resultsToast', `Limpeza total! ${total} MB libertados`);
         }
         
-        function showResultsToast(message) {
-            const toast = document.getElementById('resultsToast');
-            toast.innerHTML = '<i class="fas fa-check-circle"></i> ' + message;
+        function showToast(id, msg) {
+            const toast = document.getElementById(id);
+            toast.innerHTML = '<i class="fas fa-check-circle"></i> ' + msg;
             toast.classList.add('show');
             setTimeout(() => toast.classList.remove('show'), 3000);
         }

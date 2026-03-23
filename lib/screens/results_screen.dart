@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'category_detail_screen.dart';
 
 class ResultsScreen extends StatefulWidget {
   const ResultsScreen({super.key});
@@ -8,92 +9,122 @@ class ResultsScreen extends StatefulWidget {
 }
 
 class _ResultsScreenState extends State<ResultsScreen> {
-  // Contadores dinâmicos - simulam dados reais
-  int duplicatePhotos = 47;
-  int screenshots = 123;
-  int videos = 18;
-  int contacts = 35;
-  
-  double potentialSavings = 2.4; // GB que podem ser libertados
-  bool isDeleting = false;
+  // Dados das categorias
+  Map<String, CategoryData> categories = {
+    'photos': CategoryData(
+      name: 'Fotos',
+      icon: Icons.photo_library,
+      color: const Color(0xFF2196F3),
+      allItems: 245,
+      duplicates: 47,
+      allSize: 1200,
+      duplicatesSize: 850,
+    ),
+    'screenshots': CategoryData(
+      name: 'Screenshots',
+      icon: Icons.smartphone,
+      color: const Color(0xFF9C27B0),
+      allItems: 310,
+      duplicates: 123,
+      allSize: 890,
+      duplicatesSize: 620,
+    ),
+    'videos': CategoryData(
+      name: 'Vídeos',
+      icon: Icons.videocam,
+      color: const Color(0xFFFF9800),
+      allItems: 85,
+      duplicates: 18,
+      allSize: 4500,
+      duplicatesSize: 980,
+    ),
+    'contacts': CategoryData(
+      name: 'Contactos',
+      icon: Icons.people,
+      color: const Color(0xFF4CAF50),
+      allItems: 520,
+      duplicates: 35,
+      allSize: 45,
+      duplicatesSize: 12,
+    ),
+    'music': CategoryData(
+      name: 'Músicas',
+      icon: Icons.music_note,
+      color: const Color(0xFFE91E63),
+      allItems: 156,
+      duplicates: 28,
+      allSize: 2800,
+      duplicatesSize: 540,
+    ),
+  };
 
-  void _deleteCategory(String category, int count, double sizeMB) async {
-    setState(() {
-      isDeleting = true;
+  double get totalDuplicatesSize {
+    double total = 0;
+    categories.forEach((key, value) {
+      total += value.duplicatesSize;
     });
-
-    // Simular eliminação
-    await Future.delayed(const Duration(seconds: 2));
-
-    setState(() {
-      isDeleting = false;
-      switch (category) {
-        case 'photos':
-          duplicatePhotos = 0;
-          break;
-        case 'screenshots':
-          screenshots = 0;
-          break;
-        case 'videos':
-          videos = 0;
-          break;
-        case 'contacts':
-          contacts = 0;
-          break;
-      }
-      potentialSavings -= sizeMB / 1024;
-      if (potentialSavings < 0) potentialSavings = 0;
-    });
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const Icon(Icons.check_circle, color: Color(0xFF00E676)),
-              const SizedBox(width: 12),
-              Text('Limpeza concluída! ${sizeMB.toStringAsFixed(0)} MB libertados'),
-            ],
-          ),
-          backgroundColor: const Color(0xFF2D2D2D),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        ),
-      );
-    }
+    return total;
   }
 
-  void _cleanAll() async {
-    setState(() {
-      isDeleting = true;
+  int get totalDuplicates {
+    int total = 0;
+    categories.forEach((key, value) {
+      total += value.duplicates;
     });
+    return total;
+  }
 
-    await Future.delayed(const Duration(seconds: 3));
+  void _openCategory(String categoryKey) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CategoryDetailScreen(
+          categoryKey: categoryKey,
+          categoryData: categories[categoryKey]!,
+          onClean: (cleanedDuplicates, cleanedSize) {
+            setState(() {
+              categories[categoryKey]!.duplicates -= cleanedDuplicates;
+              categories[categoryKey]!.duplicatesSize -= cleanedSize;
+            });
+          },
+        ),
+      ),
+    );
+  }
 
-    double totalCleaned = potentialSavings;
+  void _cleanAllDuplicates() async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(color: Color(0xFF00E676)),
+      ),
+    );
+
+    await Future.delayed(const Duration(seconds: 2));
+
+    double totalCleaned = totalDuplicatesSize;
 
     setState(() {
-      isDeleting = false;
-      duplicatePhotos = 0;
-      screenshots = 0;
-      videos = 0;
-      contacts = 0;
-      potentialSavings = 0;
+      categories.forEach((key, value) {
+        value.duplicates = 0;
+        value.duplicatesSize = 0;
+      });
     });
 
     if (mounted) {
+      Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
             children: [
               const Icon(Icons.celebration, color: Color(0xFF00E676)),
               const SizedBox(width: 12),
-              Text('Limpeza total concluída! ${(totalCleaned * 1024).toStringAsFixed(0)} MB libertados'),
+              Text('Limpeza total! ${totalCleaned.toStringAsFixed(0)} MB libertados'),
             ],
           ),
           backgroundColor: const Color(0xFF2D2D2D),
           behavior: SnackBarBehavior.floating,
-          duration: const Duration(seconds: 4),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         ),
       );
@@ -102,8 +133,6 @@ class _ResultsScreenState extends State<ResultsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    int totalItems = duplicatePhotos + screenshots + videos + contacts;
-    
     return Scaffold(
       backgroundColor: const Color(0xFF121212),
       appBar: AppBar(
@@ -124,12 +153,12 @@ class _ResultsScreenState extends State<ResultsScreen> {
         centerTitle: true,
       ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Column(
-            children: [
-              // Resumo no topo
-              Container(
+        child: Column(
+          children: [
+            // Resumo
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
@@ -137,96 +166,57 @@ class _ResultsScreenState extends State<ResultsScreen> {
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
                     color: const Color(0xFF00E676).withOpacity(0.3),
-                    width: 1,
                   ),
                 ),
                 child: Column(
                   children: [
                     Text(
-                      '$totalItems itens encontrados',
+                      '$totalDuplicates duplicados encontrados',
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 24,
+                        fontSize: 22,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Pode libertar ${potentialSavings.toStringAsFixed(1)} GB',
-                      style: TextStyle(
-                        color: const Color(0xFF00E676),
+                      'Pode libertar ${(totalDuplicatesSize / 1024).toStringAsFixed(1)} GB',
+                      style: const TextStyle(
+                        color: Color(0xFF00E676),
                         fontSize: 16,
-                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],
                 ),
               ),
-              
-              const SizedBox(height: 24),
-              
-              // Grid de categorias
-              Expanded(
-                child: GridView.count(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 16,
-                  mainAxisSpacing: 16,
-                  childAspectRatio: 1.1,
-                  children: [
-                    _buildCategoryCard(
-                      icon: Icons.photo_library,
-                      title: 'Fotos Duplicadas',
-                      count: duplicatePhotos,
-                      size: 850,
-                      color: const Color(0xFF2196F3),
-                      category: 'photos',
-                    ),
-                    _buildCategoryCard(
-                      icon: Icons.smartphone,
-                      title: 'Screenshots',
-                      count: screenshots,
-                      size: 620,
-                      color: const Color(0xFF9C27B0),
-                      category: 'screenshots',
-                    ),
-                    _buildCategoryCard(
-                      icon: Icons.videocam,
-                      title: 'Vídeos',
-                      count: videos,
-                      size: 980,
-                      color: const Color(0xFFFF9800),
-                      category: 'videos',
-                    ),
-                    _buildCategoryCard(
-                      icon: Icons.people,
-                      title: 'Contactos',
-                      count: contacts,
-                      size: 12,
-                      color: const Color(0xFF4CAF50),
-                      category: 'contacts',
-                    ),
-                  ],
-                ),
+            ),
+
+            // Lista de categorias
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                children: categories.entries.map((entry) {
+                  return _buildCategoryTile(entry.key, entry.value);
+                }).toList(),
               ),
-              
-              const SizedBox(height: 20),
-              
-              // Botão Limpar Tudo
-              GestureDetector(
-                onTap: (isDeleting || totalItems == 0) ? null : _cleanAll,
+            ),
+
+            // Botão Limpar Duplicados
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: GestureDetector(
+                onTap: totalDuplicates == 0 ? null : _cleanAllDuplicates,
                 child: Container(
                   width: double.infinity,
                   height: 60,
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: (isDeleting || totalItems == 0)
+                      colors: totalDuplicates == 0
                           ? [Colors.grey.shade700, Colors.grey.shade600]
                           : [const Color(0xFF00E676), const Color(0xFF00BCD4)],
-                      begin: Alignment.centerLeft,
-                      end: Alignment.centerRight,
                     ),
                     borderRadius: BorderRadius.circular(30),
-                    boxShadow: (isDeleting || totalItems == 0)
+                    boxShadow: totalDuplicates == 0
                         ? []
                         : [
                             BoxShadow(
@@ -237,127 +227,114 @@ class _ResultsScreenState extends State<ResultsScreen> {
                           ],
                   ),
                   child: Center(
-                    child: isDeleting
-                        ? const Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              SizedBox(
-                                width: 24,
-                                height: 24,
-                                child: CircularProgressIndicator(
-                                  color: Colors.white,
-                                  strokeWidth: 2,
-                                ),
-                              ),
-                              SizedBox(width: 12),
-                              Text(
-                                'A Limpar...',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          )
-                        : Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(Icons.cleaning_services, color: Colors.white, size: 28),
-                              const SizedBox(width: 12),
-                              Text(
-                                totalItems == 0 ? 'Tudo Limpo!' : 'Limpar Tudo',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
+                    child: Text(
+                      totalDuplicates == 0
+                          ? 'Sem Duplicados!'
+                          : 'Limpar Todos os Duplicados',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                 ),
               ),
-              
-              const SizedBox(height: 20),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildCategoryCard({
-    required IconData icon,
-    required String title,
-    required int count,
-    required double size,
-    required Color color,
-    required String category,
-  }) {
-    bool isEmpty = count == 0;
-    
+  Widget _buildCategoryTile(String key, CategoryData data) {
     return GestureDetector(
-      onTap: isEmpty ? null : () => _deleteCategory(category, count, size),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
+      onTap: () => _openCategory(key),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: isEmpty ? const Color(0xFF1A1A1A) : const Color(0xFF1E1E1E),
-          borderRadius: BorderRadius.circular(20),
+          color: const Color(0xFF1E1E1E),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isEmpty ? Colors.grey.shade800 : color.withOpacity(0.3),
-            width: 1,
+            color: data.color.withOpacity(0.3),
           ),
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: isEmpty ? Colors.grey.shade800 : color.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Icon(
-                  isEmpty ? Icons.check_circle : icon,
-                  color: isEmpty ? Colors.grey : color,
-                  size: 30,
-                ),
+        child: Row(
+          children: [
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: data.color.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(14),
               ),
-              const SizedBox(height: 12),
-              Text(
-                title,
-                style: TextStyle(
-                  color: isEmpty ? Colors.grey : Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                ),
-                textAlign: TextAlign.center,
+              child: Icon(data.icon, color: data.color, size: 28),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    data.name,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${data.allItems} total • ${data.duplicates} duplicados',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.6),
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 4),
-              Text(
-                isEmpty ? 'Limpo' : '$count itens',
-                style: TextStyle(
-                  color: isEmpty ? Colors.grey.shade600 : color,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              if (!isEmpty)
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
                 Text(
-                  '${size.toStringAsFixed(0)} MB',
+                  '${data.duplicatesSize.toStringAsFixed(0)} MB',
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.5),
-                    fontSize: 12,
+                    color: data.color,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
-            ],
-          ),
+                const Icon(
+                  Icons.chevron_right,
+                  color: Colors.white54,
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );
   }
+}
+
+class CategoryData {
+  String name;
+  IconData icon;
+  Color color;
+  int allItems;
+  int duplicates;
+  double allSize;
+  double duplicatesSize;
+
+  CategoryData({
+    required this.name,
+    required this.icon,
+    required this.color,
+    required this.allItems,
+    required this.duplicates,
+    required this.allSize,
+    required this.duplicatesSize,
+  });
 }
