@@ -1,5 +1,5 @@
-name: instaclean
-description: InstaClean - App de serviços de limpeza
+name: instaclean_pmc
+description: InstaClean PMC - App de limpeza de memória
 publish_to: 'none'
 version: 1.0.0+1
 

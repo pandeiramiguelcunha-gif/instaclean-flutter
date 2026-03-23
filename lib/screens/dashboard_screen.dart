@@ -67,7 +67,7 @@ class _DashboardScreenState extends State<DashboardScreen>
         backgroundColor: Colors.transparent,
         elevation: 0,
         title: const Text(
-          'InstaClean',
+          'InstaClean PMC',
           style: TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.bold,
