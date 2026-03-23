@@ -7,10 +7,6 @@ workflows:
       flutter: stable
       java: 17
     scripts:
-      - name: Criar Projeto Flutter
-        script: |
-          flutter create . --platforms android --org com.instaclean --project-name instaclean
-          
       - name: Instalar Dependencias
         script: |
           flutter pub get
