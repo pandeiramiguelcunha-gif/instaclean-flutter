@@ -11,9 +11,14 @@ workflows:
         script: |
           flutter pub get
           
-      - name: Build APK
+      - name: Build APK Release
         script: |
-          flutter build apk --debug
+          flutter build apk --release
+          
+      - name: Build AAB Release
+        script: |
+          flutter build appbundle --release
           
     artifacts:
       - build/**/outputs/**/*.apk
+      - build/**/outputs/**/*.aab
