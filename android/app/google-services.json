@@ -1,0 +1,67 @@
+{
+  "project_info": {
+    "project_number": "340355120279",
+    "project_id": "instacleanpmc",
+    "storage_bucket": "instacleanpmc.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:340355120279:android:272825d207c31ab5527dd2",
+        "android_client_info": {
+          "package_name": "com.instaclean.pmc"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDuvi6Wm0GzTL0KrmTP8IyBhlXscq-iHME"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:340355120279:android:6648467e750adc21527dd2",
+        "android_client_info": {
+          "package_name": "com.instaclean.smartstorage"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDuvi6Wm0GzTL0KrmTP8IyBhlXscq-iHME"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:340355120279:android:faa7a489978735f6527dd2",
+        "android_client_info": {
+          "package_name": "com.pandeiramiguel.instaclean"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDuvi6Wm0GzTL0KrmTP8IyBhlXscq-iHME"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
