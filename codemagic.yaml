@@ -11,6 +11,10 @@ workflows:
         script: |
           flutter pub get
           
+      - name: Gerar icones do app
+        script: |
+          dart run flutter_launcher_icons
+          
       - name: Build App Bundle (AAB) para Play Store
         script: |
           flutter build appbundle --release --no-tree-shake-icons

@@ -15,7 +15,7 @@
     <application
         android:label="InstaClean PMC"
         android:name="${applicationName}"
-        android:icon="@android:drawable/sym_def_app_icon"
+        android:icon="@mipmap/ic_launcher"
         android:requestLegacyExternalStorage="true">
         
         <!-- AdMob App ID -->
