@@ -140,7 +140,7 @@ class CleanerService {
           }
 
           final title = await asset.titleAsync ?? '';
-          final size = asset.size.width * asset.size.height; // Aproximação
+          final size = (asset.size.width * asset.size.height).toInt(); // Aproximação
 
           final mediaItem = MediaItem(
             asset: asset,
