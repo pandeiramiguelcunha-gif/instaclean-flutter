@@ -8,9 +8,9 @@ class AdService {
   BannerAd? bannerAd;
   InterstitialAd? interstitialAd;
 
-  // IDs de TESTE do Google (funcionam sempre)
-  static const String bannerAdUnitId = 'ca-app-pub-3940256099942544/6300978111';
-  static const String interstitialAdUnitId = 'ca-app-pub-3940256099942544/1033173712';
+  // IDs reais do AdMob
+  static const String bannerAdUnitId = 'ca-app-pub-2353019524746156/4464707500';
+  static const String interstitialAdUnitId = 'ca-app-pub-2353019524746156/9525462496';
 
   // Carregar Banner
   void loadBannerAd({Function()? onLoaded}) {

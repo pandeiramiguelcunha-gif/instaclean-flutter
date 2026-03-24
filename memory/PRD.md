@@ -58,11 +58,11 @@ Build a Flutter mobile application called "InstaClean PMC" - a phone storage cle
 - [x] Fixed all compilation errors (AssetType + PhotoManager import)
 
 ## Pending Items (Require User Action)
-- [ ] **P1**: Replace AdMob test IDs with real IDs (user must provide App ID + Ad Unit IDs)
+- [x] **P1**: AdMob configured with real IDs (App: ca-app-pub-2353019524746156~7848109235)
 - [ ] **P1**: Add Firebase `google-services.json` (user must provide from Firebase console)
 - [ ] **P1**: Configure release signing keystore (user must provide alias, key password, store password)
 - [ ] **P2**: Google Play Store publication (after signed AAB is built)
 
 ## Current Status
 - **Build Status**: Ready for Codemagic build (all compilation errors fixed)
-- **Mocked**: AdMob using test IDs, Firebase not yet integrated (missing `google-services.json`)
+- **Mocked**: Firebase not yet integrated (missing `google-services.json`)
