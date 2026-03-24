@@ -14,3 +14,8 @@
 
 # Photo Manager
 -keep class com.fluttercandies.photo_manager.** { *; }
+
+# Google Play Core (necessário para Flutter deferred components)
+-dontwarn com.google.android.play.core.splitcompat.**
+-dontwarn com.google.android.play.core.splitinstall.**
+-dontwarn com.google.android.play.core.tasks.**
