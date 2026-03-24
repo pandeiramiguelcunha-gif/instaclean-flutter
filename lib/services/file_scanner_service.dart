@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:crypto/crypto.dart';
 import 'package:path/path.dart' as path;
+import 'package:flutter/foundation.dart';
 
 class FileItem {
   final String filePath;
@@ -28,13 +29,10 @@ class FileScannerService {
   factory FileScannerService() => _instance;
   FileScannerService._internal();
 
-  // Extensões suportadas
   final List<String> photoExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.heic', '.heif'];
   final List<String> videoExtensions = ['.mp4', '.avi', '.mkv', '.mov', '.wmv', '.flv', '.webm', '.3gp'];
   final List<String> musicExtensions = ['.mp3', '.wav', '.flac', '.aac', '.ogg', '.m4a', '.wma'];
-
-  // Pastas comuns de screenshots
-  final List<String> screenshotFolders = ['Screenshots', 'Screen captures', 'Capturas de tela'];
+  final List<String> screenshotFolders = ['Screenshots', 'Screen captures', 'Capturas'];
 
   Future<Map<FileType, List<FileItem>>> scanAllFiles({
     Function(String status, double progress)? onProgress,
@@ -47,26 +45,34 @@ class FileScannerService {
     };
 
     try {
-      // Diretórios para escanear
       List<Directory> dirsToScan = [];
 
-      // Armazenamento externo
       if (Platform.isAndroid) {
-        final externalDirs = [
-          Directory('/storage/emulated/0'),
-          Directory('/storage/emulated/0/DCIM'),
-          Directory('/storage/emulated/0/Pictures'),
-          Directory('/storage/emulated/0/Download'),
-          Directory('/storage/emulated/0/Music'),
-          Directory('/storage/emulated/0/Movies'),
-          Directory('/storage/emulated/0/Videos'),
+        final baseDirs = [
+          '/storage/emulated/0/DCIM',
+          '/storage/emulated/0/Pictures',
+          '/storage/emulated/0/Download',
+          '/storage/emulated/0/Music',
+          '/storage/emulated/0/Movies',
+          '/storage/emulated/0/Videos',
+          '/storage/emulated/0/Screenshots',
         ];
 
-        for (var dir in externalDirs) {
-          if (await dir.exists()) {
-            dirsToScan.add(dir);
+        for (var dirPath in baseDirs) {
+          final dir = Directory(dirPath);
+          try {
+            if (await dir.exists()) {
+              dirsToScan.add(dir);
+            }
+          } catch (e) {
+            debugPrint('Não foi possível aceder a $dirPath: $e');
           }
         }
+      }
+
+      if (dirsToScan.isEmpty) {
+        onProgress?.call('Sem acesso a pastas. Use modo demo.', 1.0);
+        return results;
       }
 
       int totalDirs = dirsToScan.length;
@@ -80,7 +86,8 @@ class FileScannerService {
 
       onProgress?.call('Análise concluída!', 1.0);
     } catch (e) {
-      print('Erro ao escanear ficheiros: $e');
+      debugPrint('Erro ao escanear ficheiros: $e');
+      onProgress?.call('Erro na análise: $e', 1.0);
     }
 
     return results;
@@ -90,29 +97,27 @@ class FileScannerService {
     try {
       await for (var entity in dir.list(recursive: true, followLinks: false)) {
         if (entity is File) {
-          final ext = path.extension(entity.path).toLowerCase();
-          final fileName = path.basename(entity.path);
-          final parentFolder = path.basename(path.dirname(entity.path));
+          try {
+            final ext = path.extension(entity.path).toLowerCase();
+            final fileName = path.basename(entity.path);
 
-          FileType? type;
+            FileType? type;
 
-          if (photoExtensions.contains(ext)) {
-            // Verificar se é screenshot
-            if (screenshotFolders.any((folder) => 
-                entity.path.toLowerCase().contains(folder.toLowerCase())) ||
-                fileName.toLowerCase().contains('screenshot')) {
-              type = FileType.screenshot;
-            } else {
-              type = FileType.photo;
+            if (photoExtensions.contains(ext)) {
+              if (screenshotFolders.any((folder) => 
+                  entity.path.toLowerCase().contains(folder.toLowerCase())) ||
+                  fileName.toLowerCase().contains('screenshot')) {
+                type = FileType.screenshot;
+              } else {
+                type = FileType.photo;
+              }
+            } else if (videoExtensions.contains(ext)) {
+              type = FileType.video;
+            } else if (musicExtensions.contains(ext)) {
+              type = FileType.music;
             }
-          } else if (videoExtensions.contains(ext)) {
-            type = FileType.video;
-          } else if (musicExtensions.contains(ext)) {
-            type = FileType.music;
-          }
 
-          if (type != null) {
-            try {
+            if (type != null) {
               final stat = await entity.stat();
               results[type]!.add(FileItem(
                 filePath: entity.path,
@@ -121,14 +126,14 @@ class FileScannerService {
                 modified: stat.modified,
                 type: type,
               ));
-            } catch (e) {
-              // Ignorar ficheiros que não podem ser acedidos
             }
+          } catch (e) {
+            // Ignorar ficheiros individuais com erro
           }
         }
       }
     } catch (e) {
-      // Ignorar diretórios que não podem ser acedidos
+      debugPrint('Erro ao escanear diretório ${dir.path}: $e');
     }
   }
 
@@ -136,19 +141,25 @@ class FileScannerService {
     Function(String status, double progress)? onProgress,
   }) async {
     List<List<FileItem>> duplicateGroups = [];
+    
+    if (files.isEmpty) return duplicateGroups;
+
     Map<int, List<FileItem>> sizeGroups = {};
 
     onProgress?.call('A agrupar por tamanho...', 0.1);
 
-    // Agrupar por tamanho
     for (var file in files) {
       sizeGroups.putIfAbsent(file.size, () => []).add(file);
     }
 
-    // Filtrar grupos com mais de 1 ficheiro
     var potentialDuplicates = sizeGroups.values.where((group) => group.length > 1).toList();
 
-    onProgress?.call('A calcular hashes...', 0.3);
+    if (potentialDuplicates.isEmpty) {
+      onProgress?.call('Sem duplicados encontrados', 1.0);
+      return duplicateGroups;
+    }
+
+    onProgress?.call('A verificar ${potentialDuplicates.length} grupos...', 0.3);
 
     int processed = 0;
     int total = potentialDuplicates.length;
@@ -168,11 +179,10 @@ class FileScannerService {
             type: file.type,
           ));
         } catch (e) {
-          // Ignorar ficheiros que não podem ser lidos
+          // Ignorar ficheiros com erro
         }
       }
 
-      // Adicionar grupos com duplicados reais
       for (var hashGroup in hashGroups.values) {
         if (hashGroup.length > 1) {
           duplicateGroups.add(hashGroup);
@@ -190,9 +200,8 @@ class FileScannerService {
     final file = File(filePath);
     final bytes = await file.readAsBytes();
     
-    // Para ficheiros grandes, usar apenas os primeiros e últimos bytes
     Uint8List bytesToHash;
-    if (bytes.length > 1024 * 1024) { // > 1MB
+    if (bytes.length > 1024 * 1024) {
       final first = bytes.sublist(0, 512 * 1024);
       final last = bytes.sublist(bytes.length - 512 * 1024);
       bytesToHash = Uint8List.fromList([...first, ...last]);
@@ -213,7 +222,7 @@ class FileScannerService {
       }
       return false;
     } catch (e) {
-      print('Erro ao eliminar ficheiro: $e');
+      debugPrint('Erro ao eliminar ficheiro: $e');
       return false;
     }
   }

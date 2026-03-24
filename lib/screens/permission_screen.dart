@@ -11,48 +11,57 @@ class PermissionScreen extends StatefulWidget {
 
 class _PermissionScreenState extends State<PermissionScreen> {
   final PermissionService _permissionService = PermissionService();
-  bool _isChecking = true;
-  bool _hasPermissions = false;
+  bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    _checkPermissions();
+    _checkExistingPermissions();
   }
 
-  Future<void> _checkPermissions() async {
-    final hasPermissions = await _permissionService.checkPermissions();
-    
-    if (hasPermissions) {
-      _navigateToDashboard();
-    } else {
-      setState(() {
-        _isChecking = false;
-        _hasPermissions = false;
-      });
+  Future<void> _checkExistingPermissions() async {
+    try {
+      final hasPermissions = await _permissionService.checkPermissions();
+      if (hasPermissions && mounted) {
+        _navigateToDashboard();
+      }
+    } catch (e) {
+      debugPrint('Erro ao verificar permissões: $e');
     }
   }
 
   Future<void> _requestPermissions() async {
-    setState(() => _isChecking = true);
+    if (_isLoading) return;
     
-    final granted = await _permissionService.requestAllPermissions(context);
+    setState(() => _isLoading = true);
     
-    if (granted) {
-      _navigateToDashboard();
-    } else {
-      setState(() {
-        _isChecking = false;
-        _hasPermissions = false;
-      });
+    try {
+      final granted = await _permissionService.requestAllPermissions(context);
       
-      if (mounted) {
+      if (granted && mounted) {
+        _navigateToDashboard();
+      } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Permissões necessárias para continuar'),
+            content: Text('Por favor, permita o acesso aos ficheiros para continuar'),
+            backgroundColor: Colors.orange,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Erro ao pedir permissões: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erro: $e'),
             backgroundColor: Colors.red,
           ),
         );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
       }
     }
   }
@@ -118,94 +127,107 @@ class _PermissionScreenState extends State<PermissionScreen> {
               
               const SizedBox(height: 48),
               
-              if (_isChecking) ...[
-                const CircularProgressIndicator(
+              // Ícone de pasta
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1E1E1E),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Icon(
+                  Icons.folder_open,
+                  size: 60,
                   color: Color(0xFF00E676),
                 ),
-                const SizedBox(height: 24),
-                const Text(
-                  'A verificar permissões...',
-                  style: TextStyle(color: Colors.white70),
+              ),
+              
+              const SizedBox(height: 32),
+              
+              const Text(
+                'Permissões Necessárias',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
                 ),
-              ] else ...[
-                // Ícone de permissão
-                Container(
-                  padding: const EdgeInsets.all(20),
+              ),
+              
+              const SizedBox(height: 16),
+              
+              Text(
+                'Para analisar e limpar ficheiros duplicados, o InstaClean PMC precisa de acesso aos seus ficheiros.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.7),
+                  fontSize: 16,
+                ),
+              ),
+              
+              const SizedBox(height: 24),
+              
+              // Lista de permissões
+              _buildPermissionItem(Icons.photo_library, 'Fotos e Imagens'),
+              _buildPermissionItem(Icons.videocam, 'Vídeos'),
+              _buildPermissionItem(Icons.music_note, 'Músicas'),
+              
+              const SizedBox(height: 32),
+              
+              // Botão de permitir
+              GestureDetector(
+                onTap: _isLoading ? null : _requestPermissions,
+                child: Container(
+                  width: double.infinity,
+                  height: 56,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1E1E1E),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Icon(
-                    Icons.folder_open,
-                    size: 60,
-                    color: Color(0xFF00E676),
-                  ),
-                ),
-                
-                const SizedBox(height: 32),
-                
-                const Text(
-                  'Permissões Necessárias',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                
-                const SizedBox(height: 16),
-                
-                Text(
-                  'Para analisar e limpar ficheiros duplicados, o InstaClean PMC precisa de acesso aos seus ficheiros.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.7),
-                    fontSize: 16,
-                  ),
-                ),
-                
-                const SizedBox(height: 24),
-                
-                // Lista de permissões
-                _buildPermissionItem(Icons.photo_library, 'Fotos e Imagens'),
-                _buildPermissionItem(Icons.videocam, 'Vídeos'),
-                _buildPermissionItem(Icons.music_note, 'Músicas'),
-                _buildPermissionItem(Icons.contacts, 'Contactos'),
-                
-                const SizedBox(height: 32),
-                
-                // Botão de permitir
-                GestureDetector(
-                  onTap: _requestPermissions,
-                  child: Container(
-                    width: double.infinity,
-                    height: 56,
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF00E676), Color(0xFF00BCD4)],
-                      ),
-                      borderRadius: BorderRadius.circular(28),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFF00E676).withOpacity(0.4),
-                          blurRadius: 20,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
+                    gradient: LinearGradient(
+                      colors: _isLoading 
+                          ? [Colors.grey, Colors.grey.shade600]
+                          : [const Color(0xFF00E676), const Color(0xFF00BCD4)],
                     ),
-                    child: const Center(
-                      child: Text(
-                        'Permitir Acesso',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
+                    borderRadius: BorderRadius.circular(28),
+                    boxShadow: _isLoading ? [] : [
+                      BoxShadow(
+                        color: const Color(0xFF00E676).withOpacity(0.4),
+                        blurRadius: 20,
+                        offset: const Offset(0, 8),
                       ),
-                    ),
+                    ],
+                  ),
+                  child: Center(
+                    child: _isLoading
+                        ? const SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : const Text(
+                            'Permitir Acesso',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                   ),
                 ),
-              ],
+              ),
+              
+              const SizedBox(height: 16),
+              
+              // Botão para pular (desenvolvimento)
+              TextButton(
+                onPressed: _navigateToDashboard,
+                child: Text(
+                  'Continuar sem permissões (modo demo)',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.5),
+                    fontSize: 12,
+                  ),
+                ),
+              ),
             ],
           ),
         ),
