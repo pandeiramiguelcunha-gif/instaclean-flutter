@@ -11,6 +11,7 @@ class MediaItem {
   final DateTime createDate;
   final AssetType type;
   String? hash;
+  bool isSelected;
 
   MediaItem({
     required this.asset,
@@ -20,6 +21,7 @@ class MediaItem {
     required this.createDate,
     required this.type,
     this.hash,
+    this.isSelected = false,
   });
 }
 
@@ -30,7 +32,6 @@ class CleanerService {
   factory CleanerService() => _instance;
   CleanerService._internal();
 
-  // Resultados do scan
   Map<MediaCategory, List<MediaItem>> allMedia = {};
   Map<MediaCategory, List<List<MediaItem>>> duplicates = {};
   
@@ -38,7 +39,7 @@ class CleanerService {
     int count = 0;
     duplicates.forEach((key, groups) {
       for (var group in groups) {
-        count += group.length - 1; // -1 para manter o original
+        count += group.length - 1;
       }
     });
     return count;
@@ -56,13 +57,18 @@ class CleanerService {
     return size;
   }
 
-  // Pedir permissões via photo_manager
   Future<bool> requestPermission() async {
-    final PermissionState ps = await PhotoManager.requestPermissionExtend();
+    final PermissionState ps = await PhotoManager.requestPermissionExtend(
+      requestOption: const PermissionRequestOption(
+        androidPermission: AndroidPermission(
+          type: RequestType.common,
+          mediaLocation: false,
+        ),
+      ),
+    );
     return ps.isAuth || ps.hasAccess;
   }
 
-  // Verificar permissões
   Future<bool> checkPermission() async {
     final PermissionState ps = await PhotoManager.requestPermissionExtend(
       requestOption: const PermissionRequestOption(
@@ -75,7 +81,7 @@ class CleanerService {
     return ps.isAuth || ps.hasAccess;
   }
 
-  // Scan de todos os media
+  // SCAN OPTIMIZADO - Mais rápido
   Future<void> scanAllMedia({
     Function(String status, double progress)? onProgress,
   }) async {
@@ -94,9 +100,9 @@ class CleanerService {
     };
 
     try {
-      onProgress?.call('A obter álbuns...', 0.1);
+      onProgress?.call('A obter media...', 0.05);
 
-      // Obter todos os álbuns
+      // Obter TODOS os assets de uma vez (mais rápido)
       final List<AssetPathEntity> albums = await PhotoManager.getAssetPathList(
         type: RequestType.common,
         hasAll: true,
@@ -107,46 +113,51 @@ class CleanerService {
         return;
       }
 
-      onProgress?.call('A analisar ${albums.length} álbuns...', 0.2);
-
-      int totalAssets = 0;
-      int processedAssets = 0;
-
-      // Contar total de assets
+      // Encontrar o álbum "All" ou "Recentes"
+      AssetPathEntity? allAlbum;
       for (var album in albums) {
-        totalAssets += await album.assetCountAsync;
+        if (album.isAll) {
+          allAlbum = album;
+          break;
+        }
       }
+      allAlbum ??= albums.first;
 
-      // Processar cada álbum
-      for (var album in albums) {
-        final String albumName = album.name.toLowerCase();
-        final int count = await album.assetCountAsync;
+      final int totalCount = await allAlbum.assetCountAsync;
+      onProgress?.call('A processar $totalCount ficheiros...', 0.1);
+
+      // Processar em lotes para melhor performance
+      const int batchSize = 100;
+      int processed = 0;
+
+      for (int start = 0; start < totalCount; start += batchSize) {
+        final end = (start + batchSize > totalCount) ? totalCount : start + batchSize;
         
-        if (count == 0) continue;
-
-        final List<AssetEntity> assets = await album.getAssetListRange(
-          start: 0,
-          end: count,
+        final List<AssetEntity> assets = await allAlbum.getAssetListRange(
+          start: start,
+          end: end,
         );
 
         for (var asset in assets) {
-          processedAssets++;
-          
-          if (processedAssets % 50 == 0) {
-            onProgress?.call(
-              'A processar: $processedAssets de $totalAssets',
-              0.2 + (0.5 * processedAssets / totalAssets),
-            );
-          }
-
           final title = await asset.titleAsync ?? '';
-          final size = (asset.size.width * asset.size.height).toInt(); // Aproximação
+          final relativePath = await asset.relativePath ?? '';
+          
+          // Obter tamanho real do ficheiro
+          int fileSize = 0;
+          try {
+            final file = await asset.file;
+            if (file != null) {
+              fileSize = await file.length();
+            }
+          } catch (e) {
+            fileSize = (asset.width * asset.height * 3).toInt(); // Estimativa
+          }
 
           final mediaItem = MediaItem(
             asset: asset,
             id: asset.id,
             title: title,
-            size: size,
+            size: fileSize,
             createDate: asset.createDateTime,
             type: asset.type,
           );
@@ -158,31 +169,37 @@ class CleanerService {
             allMedia[MediaCategory.music]!.add(mediaItem);
           } else if (asset.type == AssetType.image) {
             // Verificar se é screenshot
-            if (albumName.contains('screenshot') ||
-                albumName.contains('captura') ||
-                title.toLowerCase().contains('screenshot')) {
+            final pathLower = relativePath.toLowerCase();
+            final titleLower = title.toLowerCase();
+            
+            if (pathLower.contains('screenshot') ||
+                pathLower.contains('captura') ||
+                titleLower.contains('screenshot') ||
+                titleLower.startsWith('img_') && titleLower.contains('_')) {
               allMedia[MediaCategory.screenshots]!.add(mediaItem);
             } else {
               allMedia[MediaCategory.photos]!.add(mediaItem);
             }
           }
+
+          processed++;
         }
+
+        final progress = 0.1 + (0.5 * processed / totalCount);
+        onProgress?.call('Processados: $processed de $totalCount', progress);
       }
+
+      // Scan de áudio separado (para encontrar músicas)
+      onProgress?.call('A procurar músicas...', 0.6);
+      await _scanAudioFiles(onProgress);
 
       onProgress?.call('A procurar duplicados...', 0.7);
 
-      // Encontrar duplicados em cada categoria
+      // Encontrar duplicados (optimizado)
       for (var category in MediaCategory.values) {
-        if (allMedia[category]!.isNotEmpty) {
-          duplicates[category] = await _findDuplicatesInCategory(
-            allMedia[category]!,
-            onProgress: (status, progress) {
-              onProgress?.call(
-                'Duplicados em ${_getCategoryName(category)}: $status',
-                0.7 + (0.3 * progress / MediaCategory.values.length),
-              );
-            },
-          );
+        final items = allMedia[category] ?? [];
+        if (items.length > 1) {
+          duplicates[category] = await _findDuplicatesOptimized(items);
         }
       }
 
@@ -193,37 +210,83 @@ class CleanerService {
     }
   }
 
-  Future<List<List<MediaItem>>> _findDuplicatesInCategory(
-    List<MediaItem> items, {
-    Function(String status, double progress)? onProgress,
-  }) async {
+  // Scan específico para áudio
+  Future<void> _scanAudioFiles(Function(String, double)? onProgress) async {
+    try {
+      final List<AssetPathEntity> audioAlbums = await PhotoManager.getAssetPathList(
+        type: RequestType.audio,
+        hasAll: true,
+      );
+
+      for (var album in audioAlbums) {
+        final count = await album.assetCountAsync;
+        if (count == 0) continue;
+
+        final assets = await album.getAssetListRange(start: 0, end: count);
+
+        for (var asset in assets) {
+          final title = await asset.titleAsync ?? 'Música';
+          
+          int fileSize = 0;
+          try {
+            final file = await asset.file;
+            if (file != null) {
+              fileSize = await file.length();
+            }
+          } catch (e) {
+            fileSize = 3 * 1024 * 1024; // 3MB estimativa
+          }
+
+          final mediaItem = MediaItem(
+            asset: asset,
+            id: asset.id,
+            title: title,
+            size: fileSize,
+            createDate: asset.createDateTime,
+            type: asset.type,
+          );
+
+          // Verificar se já não existe
+          final exists = allMedia[MediaCategory.music]!.any((m) => m.id == asset.id);
+          if (!exists) {
+            allMedia[MediaCategory.music]!.add(mediaItem);
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Erro ao scan de áudio: $e');
+    }
+  }
+
+  // Encontrar duplicados - OPTIMIZADO
+  Future<List<List<MediaItem>>> _findDuplicatesOptimized(List<MediaItem> items) async {
     List<List<MediaItem>> duplicateGroups = [];
 
     if (items.length < 2) return duplicateGroups;
 
-    // Agrupar por tamanho (aproximação inicial)
+    // Agrupar por tamanho (muito mais rápido que hash)
     Map<int, List<MediaItem>> sizeGroups = {};
     for (var item in items) {
-      sizeGroups.putIfAbsent(item.size, () => []).add(item);
+      if (item.size > 0) {
+        sizeGroups.putIfAbsent(item.size, () => []).add(item);
+      }
     }
 
-    // Filtrar grupos com potenciais duplicados
+    // Só verificar grupos com mesmo tamanho
     var potentialDuplicates = sizeGroups.values
         .where((group) => group.length > 1)
         .toList();
 
-    int processed = 0;
-    int total = potentialDuplicates.length;
-
     for (var group in potentialDuplicates) {
+      // Se tiverem o mesmo tamanho, são provavelmente duplicados
+      // Para confirmar, comparar thumbnails
       Map<String, List<MediaItem>> hashGroups = {};
 
       for (var item in group) {
         try {
-          // Calcular hash do thumbnail para performance
           final thumb = await item.asset.thumbnailDataWithSize(
-            const ThumbnailSize(100, 100),
-            quality: 50,
+            const ThumbnailSize(50, 50), // Thumbnail pequeno = mais rápido
+            quality: 30,
           );
           
           if (thumb != null) {
@@ -232,30 +295,40 @@ class CleanerService {
             hashGroups.putIfAbsent(hash, () => []).add(item);
           }
         } catch (e) {
-          // Ignorar erros individuais
+          // Usar tamanho como "hash" se falhar
+          hashGroups.putIfAbsent('size_${item.size}', () => []).add(item);
         }
       }
 
-      // Adicionar grupos com duplicados reais
       for (var hashGroup in hashGroups.values) {
         if (hashGroup.length > 1) {
           duplicateGroups.add(hashGroup);
         }
       }
-
-      processed++;
-      onProgress?.call('$processed/$total grupos', processed / total);
     }
 
     return duplicateGroups;
   }
 
-  // Eliminar ficheiros
-  Future<int> deleteItems(List<MediaItem> items) async {
-    if (items.isEmpty) return 0;
+  // Obter thumbnail
+  Future<Uint8List?> getThumbnail(MediaItem item) async {
+    try {
+      return await item.asset.thumbnailDataWithSize(
+        const ThumbnailSize(200, 200),
+        quality: 80,
+      );
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // Eliminar items selecionados
+  Future<int> deleteSelectedItems(List<MediaItem> items) async {
+    final selectedItems = items.where((i) => i.isSelected).toList();
+    if (selectedItems.isEmpty) return 0;
 
     try {
-      final List<String> ids = items.map((e) => e.id).toList();
+      final List<String> ids = selectedItems.map((e) => e.id).toList();
       final List<String> result = await PhotoManager.editor.deleteWithIds(ids);
       return result.length;
     } catch (e) {
@@ -269,38 +342,35 @@ class CleanerService {
     int deleted = 0;
     final groups = duplicates[category] ?? [];
 
+    List<String> idsToDelete = [];
     for (var group in groups) {
       if (group.length > 1) {
-        // Manter o primeiro (original), eliminar os restantes
-        final toDelete = group.sublist(1);
-        deleted += await deleteItems(toDelete);
+        for (int i = 1; i < group.length; i++) {
+          idsToDelete.add(group[i].id);
+        }
       }
     }
 
-    // Atualizar listas
+    if (idsToDelete.isNotEmpty) {
+      try {
+        final result = await PhotoManager.editor.deleteWithIds(idsToDelete);
+        deleted = result.length;
+      } catch (e) {
+        debugPrint('Erro ao eliminar: $e');
+      }
+    }
+
     duplicates[category] = [];
-    
     return deleted;
   }
 
   // Eliminar todos os duplicados
   Future<int> deleteAllDuplicates() async {
     int totalDeleted = 0;
-
     for (var category in MediaCategory.values) {
       totalDeleted += await deleteDuplicatesInCategory(category);
     }
-
     return totalDeleted;
-  }
-
-  String _getCategoryName(MediaCategory category) {
-    switch (category) {
-      case MediaCategory.photos: return 'Fotos';
-      case MediaCategory.screenshots: return 'Screenshots';
-      case MediaCategory.videos: return 'Vídeos';
-      case MediaCategory.music: return 'Músicas';
-    }
   }
 
   String formatSize(int bytes) {

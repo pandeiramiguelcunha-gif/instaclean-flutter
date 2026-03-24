@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../services/cleaner_service.dart';
 import '../services/ad_service.dart';
+import 'category_detail_screen.dart';
 
 class ResultsScreen extends StatefulWidget {
   const ResultsScreen({super.key});
@@ -39,77 +40,20 @@ class _ResultsScreenState extends State<ResultsScreen> {
     super.dispose();
   }
 
-  void _cleanCategory(MediaCategory category) async {
-    final groups = _cleanerService.duplicates[category] ?? [];
-    if (groups.isEmpty) return;
-
-    int count = 0;
-    for (var group in groups) {
-      count += group.length - 1;
-    }
-
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1E1E1E),
-        title: const Text('Confirmar Limpeza', style: TextStyle(color: Colors.white)),
-        content: Text(
-          'Vai eliminar $count ficheiros duplicados.\nEsta ação não pode ser desfeita.',
-          style: const TextStyle(color: Colors.white70),
+  void _openCategory(MediaCategory category, String name, Color color) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CategoryDetailScreen(
+          category: category,
+          categoryName: name,
+          categoryColor: color,
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF00E676)),
-            child: const Text('Eliminar', style: TextStyle(color: Colors.black)),
-          ),
-        ],
       ),
-    );
-
-    if (confirm != true) return;
-
-    // Mostrar loading
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const Center(
-        child: CircularProgressIndicator(color: Color(0xFF00E676)),
-      ),
-    );
-
-    final deleted = await _cleanerService.deleteDuplicatesInCategory(category);
-
-    if (mounted) {
-      Navigator.pop(context); // Fechar loading
-      
-      // Atualizar UI
+    ).then((_) {
+      // Atualizar ao voltar
       setState(() {});
-
-      // Mostrar anúncio intersticial após limpeza
-      _adService.showInterstitialAd(
-        onDismissed: () {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Row(
-                  children: [
-                    const Icon(Icons.check_circle, color: Color(0xFF00E676)),
-                    const SizedBox(width: 12),
-                    Text('$deleted ficheiros eliminados!'),
-                  ],
-                ),
-                backgroundColor: const Color(0xFF2D2D2D),
-              ),
-            );
-          }
-        },
-      );
-    }
+    });
   }
 
   void _cleanAll() async {
@@ -121,7 +65,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
         backgroundColor: const Color(0xFF1E1E1E),
         title: const Text('Limpar Todos os Duplicados', style: TextStyle(color: Colors.white)),
         content: Text(
-          'Vai eliminar ${_cleanerService.totalDuplicatesCount} ficheiros duplicados.\nEsta ação não pode ser desfeita.',
+          'Vai eliminar ${_cleanerService.totalDuplicatesCount} ficheiros duplicados (${_cleanerService.formatSize(_cleanerService.totalDuplicatesSize)}).\n\nEsta ação não pode ser desfeita.',
           style: const TextStyle(color: Colors.white70),
         ),
         actions: [
@@ -239,10 +183,30 @@ class _ResultsScreenState extends State<ResultsScreen> {
               child: ListView(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 children: [
-                  _buildCategoryTile(MediaCategory.photos, 'Fotos', Icons.photo_library, const Color(0xFF2196F3)),
-                  _buildCategoryTile(MediaCategory.screenshots, 'Screenshots', Icons.screenshot, const Color(0xFF9C27B0)),
-                  _buildCategoryTile(MediaCategory.videos, 'Vídeos', Icons.videocam, const Color(0xFFFF9800)),
-                  _buildCategoryTile(MediaCategory.music, 'Músicas', Icons.music_note, const Color(0xFFE91E63)),
+                  _buildCategoryTile(
+                    MediaCategory.photos,
+                    'Fotos',
+                    Icons.photo_library,
+                    const Color(0xFF2196F3),
+                  ),
+                  _buildCategoryTile(
+                    MediaCategory.screenshots,
+                    'Screenshots',
+                    Icons.screenshot,
+                    const Color(0xFF9C27B0),
+                  ),
+                  _buildCategoryTile(
+                    MediaCategory.videos,
+                    'Vídeos',
+                    Icons.videocam,
+                    const Color(0xFFFF9800),
+                  ),
+                  _buildCategoryTile(
+                    MediaCategory.music,
+                    'Músicas',
+                    Icons.music_note,
+                    const Color(0xFFE91E63),
+                  ),
                 ],
               ),
             ),
@@ -310,7 +274,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
     }
 
     return GestureDetector(
-      onTap: dupCount > 0 ? () => _cleanCategory(category) : null,
+      onTap: () => _openCategory(category, name, color),
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
@@ -351,19 +315,17 @@ class _ResultsScreenState extends State<ResultsScreen> {
                 ],
               ),
             ),
-            if (dupCount > 0)
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                if (dupCount > 0)
                   Text(
                     _cleanerService.formatSize(dupSize),
                     style: TextStyle(color: color, fontSize: 14, fontWeight: FontWeight.bold),
                   ),
-                  const Icon(Icons.chevron_right, color: Colors.white54),
-                ],
-              ),
-            if (dupCount == 0)
-              const Icon(Icons.check_circle, color: Color(0xFF00E676)),
+                const Icon(Icons.chevron_right, color: Colors.white54),
+              ],
+            ),
           ],
         ),
       ),
