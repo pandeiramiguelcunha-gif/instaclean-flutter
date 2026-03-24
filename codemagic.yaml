@@ -1,6 +1,6 @@
 workflows:
   default-workflow:
-    name: Build Instaclean Release
+    name: Build InstaClean PMC
     max_build_duration: 120
     instance_type: mac_mini_m2
     environment:
@@ -11,11 +11,11 @@ workflows:
         script: |
           flutter pub get
           
-      - name: Build App Bundle Release
+      - name: Build App Bundle (AAB) para Play Store
         script: |
           flutter build appbundle --release --no-tree-shake-icons
           
-      - name: Build APK Release
+      - name: Build APK para testes
         script: |
           flutter build apk --release --no-tree-shake-icons
           

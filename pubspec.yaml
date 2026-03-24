@@ -1,5 +1,5 @@
 name: instaclean_pmc
-description: Instaclean PMC - Limpeza Inteligente
+description: InstaClean PMC - Limpeza Inteligente de Ficheiros
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -10,11 +10,18 @@ dependencies:
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.6
+  
+  # Permissões e acesso a ficheiros
   permission_handler: ^11.3.0
+  photo_manager: ^3.0.0
   path_provider: ^2.1.2
+  device_info_plus: ^9.1.1
+  
+  # Utilitários
   crypto: ^3.0.3
   path: ^1.9.0
-  device_info_plus: ^9.1.1
+  
+  # Monetização
   google_mobile_ads: ^4.0.0
 
 dev_dependencies:

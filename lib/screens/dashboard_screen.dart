@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
-import 'dart:io';
+import '../services/cleaner_service.dart';
+import '../services/ad_service.dart';
 import 'results_screen.dart';
-import '../services/file_scanner_service.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -16,11 +16,12 @@ class _DashboardScreenState extends State<DashboardScreen>
   late AnimationController _animationController;
   late Animation<double> _animation;
   
-  final FileScannerService _scannerService = FileScannerService();
+  final CleanerService _cleanerService = CleanerService();
+  final AdService _adService = AdService();
   
-  double usedStorage = 0;
-  double totalStorage = 0;
-  double usedGB = 0;
+  double usedStorage = 67.5;
+  double totalStorage = 128.0;
+  double usedGB = 86.4;
   bool isAnalyzing = false;
   String scanStatus = '';
 
@@ -31,49 +32,15 @@ class _DashboardScreenState extends State<DashboardScreen>
       duration: const Duration(milliseconds: 1500),
       vsync: this,
     );
-    _animation = Tween<double>(begin: 0, end: 0)
+    _animation = Tween<double>(begin: 0, end: usedStorage / 100)
         .animate(CurvedAnimation(
       parent: _animationController,
       curve: Curves.easeOutCubic,
     ));
+    _animationController.forward();
     
-    _loadStorageInfo();
-  }
-
-  Future<void> _loadStorageInfo() async {
-    try {
-      // Obter informações de armazenamento
-      final stat = await Directory('/storage/emulated/0').stat();
-      
-      // Estimar espaço usado (simplificado)
-      // Em produção, usar um plugin como disk_space
-      totalStorage = 128.0; // Valor exemplo
-      usedGB = 86.4; // Valor exemplo
-      usedStorage = (usedGB / totalStorage) * 100;
-      
-      _animation = Tween<double>(begin: 0, end: usedStorage / 100)
-          .animate(CurvedAnimation(
-        parent: _animationController,
-        curve: Curves.easeOutCubic,
-      ));
-      _animationController.forward();
-      
-      setState(() {});
-    } catch (e) {
-      // Usar valores padrão
-      totalStorage = 128.0;
-      usedGB = 86.4;
-      usedStorage = 67.5;
-      
-      _animation = Tween<double>(begin: 0, end: usedStorage / 100)
-          .animate(CurvedAnimation(
-        parent: _animationController,
-        curve: Curves.easeOutCubic,
-      ));
-      _animationController.forward();
-      
-      setState(() {});
-    }
+    // Carregar anúncio intersticial
+    _adService.loadInterstitialAd();
   }
 
   @override
@@ -88,74 +55,28 @@ class _DashboardScreenState extends State<DashboardScreen>
       scanStatus = 'A iniciar análise...';
     });
 
-    try {
-      // Escanear ficheiros reais
-      final results = await _scannerService.scanAllFiles(
-        onProgress: (status, progress) {
-          if (mounted) {
-            setState(() {
-              scanStatus = status;
-            });
-          }
-        },
-      );
-
-      // Encontrar duplicados para cada categoria
-      Map<FileType, List<List<FileItem>>> duplicates = {};
-      
-      for (var type in [FileType.photo, FileType.screenshot, FileType.video, FileType.music]) {
-        setState(() {
-          scanStatus = 'A procurar duplicados em ${_getTypeName(type)}...';
-        });
-        
-        final files = results[type] ?? [];
-        if (files.isNotEmpty) {
-          duplicates[type] = await _scannerService.findDuplicates(files);
-        } else {
-          duplicates[type] = [];
+    await _cleanerService.scanAllMedia(
+      onProgress: (status, progress) {
+        if (mounted) {
+          setState(() {
+            scanStatus = status;
+          });
         }
-      }
+      },
+    );
 
-      if (mounted) {
-        setState(() {
-          isAnalyzing = false;
-          scanStatus = '';
-        });
-        
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ResultsScreen(
-              scannedFiles: results,
-              duplicates: duplicates,
-            ),
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          isAnalyzing = false;
-          scanStatus = '';
-        });
-        
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erro ao analisar: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-
-  String _getTypeName(FileType type) {
-    switch (type) {
-      case FileType.photo: return 'Fotos';
-      case FileType.screenshot: return 'Screenshots';
-      case FileType.video: return 'Vídeos';
-      case FileType.music: return 'Músicas';
-      case FileType.contact: return 'Contactos';
+    if (mounted) {
+      setState(() {
+        isAnalyzing = false;
+        scanStatus = '';
+      });
+      
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const ResultsScreen(),
+        ),
+      );
     }
   }
 
@@ -189,19 +110,6 @@ class _DashboardScreenState extends State<DashboardScreen>
           ],
         ),
         centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings, color: Colors.white70),
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Definições'),
-                  backgroundColor: Color(0xFF2D2D2D),
-                ),
-              );
-            },
-          ),
-        ],
       ),
       body: SafeArea(
         child: Padding(
@@ -210,7 +118,7 @@ class _DashboardScreenState extends State<DashboardScreen>
             children: [
               const SizedBox(height: 20),
               
-              // Gauge circular de progresso
+              // Gauge circular
               AnimatedBuilder(
                 animation: _animation,
                 builder: (context, child) {
@@ -233,12 +141,9 @@ class _DashboardScreenState extends State<DashboardScreen>
                                 strokeWidth: 3,
                               ),
                               const SizedBox(height: 12),
-                              Text(
+                              const Text(
                                 'A analisar...',
-                                style: TextStyle(
-                                  color: Colors.white.withOpacity(0.8),
-                                  fontSize: 16,
-                                ),
+                                style: TextStyle(color: Colors.white70, fontSize: 16),
                               ),
                             ] else ...[
                               Text(
@@ -279,7 +184,7 @@ class _DashboardScreenState extends State<DashboardScreen>
               
               const Spacer(),
               
-              // Botão Analisar Agora
+              // Botão Analisar
               GestureDetector(
                 onTap: isAnalyzing ? null : _startAnalysis,
                 child: Container(
@@ -290,19 +195,15 @@ class _DashboardScreenState extends State<DashboardScreen>
                       colors: isAnalyzing
                           ? [Colors.grey.shade700, Colors.grey.shade600]
                           : [const Color(0xFF00E676), const Color(0xFF00BCD4)],
-                      begin: Alignment.centerLeft,
-                      end: Alignment.centerRight,
                     ),
                     borderRadius: BorderRadius.circular(30),
-                    boxShadow: isAnalyzing
-                        ? []
-                        : [
-                            BoxShadow(
-                              color: const Color(0xFF00E676).withOpacity(0.4),
-                              blurRadius: 20,
-                              offset: const Offset(0, 8),
-                            ),
-                          ],
+                    boxShadow: isAnalyzing ? [] : [
+                      BoxShadow(
+                        color: const Color(0xFF00E676).withOpacity(0.4),
+                        blurRadius: 20,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
                   ),
                   child: Center(
                     child: isAnalyzing
@@ -356,7 +257,6 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 }
 
-// Painter para o gauge circular
 class StorageGaugePainter extends CustomPainter {
   final double progress;
   final bool isAnalyzing;
@@ -368,7 +268,6 @@ class StorageGaugePainter extends CustomPainter {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width / 2 - 20;
 
-    // Fundo do arco
     final backgroundPaint = Paint()
       ..color = const Color(0xFF2D2D2D)
       ..style = PaintingStyle.stroke
@@ -383,16 +282,11 @@ class StorageGaugePainter extends CustomPainter {
       backgroundPaint,
     );
 
-    // Gradiente do progresso
     final progressPaint = Paint()
       ..shader = const SweepGradient(
         startAngle: -math.pi * 0.75,
         endAngle: math.pi * 0.75,
-        colors: [
-          Color(0xFF00E676),
-          Color(0xFF00BCD4),
-          Color(0xFF2196F3),
-        ],
+        colors: [Color(0xFF00E676), Color(0xFF00BCD4), Color(0xFF2196F3)],
       ).createShader(Rect.fromCircle(center: center, radius: radius))
       ..style = PaintingStyle.stroke
       ..strokeWidth = 20
@@ -406,7 +300,6 @@ class StorageGaugePainter extends CustomPainter {
       progressPaint,
     );
 
-    // Círculo de fundo interno
     final innerCirclePaint = Paint()
       ..color = const Color(0xFF1A1A1A)
       ..style = PaintingStyle.fill;

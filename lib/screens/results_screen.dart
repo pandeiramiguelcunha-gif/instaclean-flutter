@@ -1,111 +1,60 @@
 import 'package:flutter/material.dart';
-import 'dart:io';
-import '../services/file_scanner_service.dart';
-import 'category_detail_screen.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
+import '../services/cleaner_service.dart';
+import '../services/ad_service.dart';
 
 class ResultsScreen extends StatefulWidget {
-  final Map<FileType, List<FileItem>> scannedFiles;
-  final Map<FileType, List<List<FileItem>>> duplicates;
-
-  const ResultsScreen({
-    super.key,
-    required this.scannedFiles,
-    required this.duplicates,
-  });
+  const ResultsScreen({super.key});
 
   @override
   State<ResultsScreen> createState() => _ResultsScreenState();
 }
 
 class _ResultsScreenState extends State<ResultsScreen> {
-  final FileScannerService _scannerService = FileScannerService();
-  late Map<FileType, List<FileItem>> _allFiles;
-  late Map<FileType, List<List<FileItem>>> _duplicates;
+  final CleanerService _cleanerService = CleanerService();
+  final AdService _adService = AdService();
+  BannerAd? _bannerAd;
+  bool _isBannerLoaded = false;
 
   @override
   void initState() {
     super.initState();
-    _allFiles = Map.from(widget.scannedFiles);
-    _duplicates = Map.from(widget.duplicates);
+    _loadBannerAd();
   }
 
-  int get totalDuplicates {
-    int count = 0;
-    _duplicates.forEach((type, groups) {
-      for (var group in groups) {
-        count += group.length - 1; // -1 porque mantemos 1 original
-      }
-    });
-    return count;
-  }
-
-  int get totalDuplicateSize {
-    int size = 0;
-    _duplicates.forEach((type, groups) {
-      for (var group in groups) {
-        // Somar tamanho de todos exceto o primeiro (original)
-        for (int i = 1; i < group.length; i++) {
-          size += group[i].size;
-        }
-      }
-    });
-    return size;
-  }
-
-  int _getCategoryDuplicateCount(FileType type) {
-    int count = 0;
-    final groups = _duplicates[type] ?? [];
-    for (var group in groups) {
-      count += group.length - 1;
-    }
-    return count;
-  }
-
-  int _getCategoryDuplicateSize(FileType type) {
-    int size = 0;
-    final groups = _duplicates[type] ?? [];
-    for (var group in groups) {
-      for (int i = 1; i < group.length; i++) {
-        size += group[i].size;
-      }
-    }
-    return size;
-  }
-
-  void _openCategory(FileType type) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => CategoryDetailScreen(
-          type: type,
-          allFiles: _allFiles[type] ?? [],
-          duplicateGroups: _duplicates[type] ?? [],
-          onFilesDeleted: (deletedPaths) {
-            setState(() {
-              // Remover ficheiros eliminados da lista
-              _allFiles[type]?.removeWhere((f) => deletedPaths.contains(f.filePath));
-              
-              // Atualizar grupos de duplicados
-              for (var group in _duplicates[type] ?? []) {
-                group.removeWhere((f) => deletedPaths.contains(f.filePath));
-              }
-              _duplicates[type]?.removeWhere((group) => group.length <= 1);
-            });
-          },
-        ),
-      ),
+  void _loadBannerAd() {
+    _adService.loadBannerAd(
+      onLoaded: () {
+        setState(() {
+          _bannerAd = _adService.bannerAd;
+          _isBannerLoaded = true;
+        });
+      },
     );
   }
 
-  void _cleanAllDuplicates() async {
-    // Confirmar ação
+  @override
+  void dispose() {
+    _adService.dispose();
+    super.dispose();
+  }
+
+  void _cleanCategory(MediaCategory category) async {
+    final groups = _cleanerService.duplicates[category] ?? [];
+    if (groups.isEmpty) return;
+
+    int count = 0;
+    for (var group in groups) {
+      count += group.length - 1;
+    }
+
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF1E1E1E),
         title: const Text('Confirmar Limpeza', style: TextStyle(color: Colors.white)),
         content: Text(
-          'Vai eliminar $totalDuplicates ficheiros duplicados e libertar ${_scannerService.formatSize(totalDuplicateSize)}.\n\nEsta ação não pode ser desfeita.',
+          'Vai eliminar $count ficheiros duplicados.\nEsta ação não pode ser desfeita.',
           style: const TextStyle(color: Colors.white70),
         ),
         actions: [
@@ -133,58 +82,105 @@ class _ResultsScreenState extends State<ResultsScreen> {
       ),
     );
 
-    // Eliminar todos os duplicados
-    List<String> pathsToDelete = [];
-    _duplicates.forEach((type, groups) {
-      for (var group in groups) {
-        for (int i = 1; i < group.length; i++) {
-          pathsToDelete.add(group[i].filePath);
-        }
-      }
-    });
+    final deleted = await _cleanerService.deleteDuplicatesInCategory(category);
 
-    int deleted = await _scannerService.deleteFiles(pathsToDelete);
-    int freedSize = totalDuplicateSize;
+    if (mounted) {
+      Navigator.pop(context); // Fechar loading
+      
+      // Atualizar UI
+      setState(() {});
 
-    // Atualizar estado
-    setState(() {
-      _duplicates.forEach((type, groups) {
-        for (var group in groups) {
-          if (group.length > 1) {
-            final toRemove = group.sublist(1);
-            for (var item in toRemove) {
-              _allFiles[type]?.removeWhere((f) => f.filePath == item.filePath);
-            }
-            group.removeRange(1, group.length);
+      // Mostrar anúncio intersticial após limpeza
+      _adService.showInterstitialAd(
+        onDismissed: () {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Row(
+                  children: [
+                    const Icon(Icons.check_circle, color: Color(0xFF00E676)),
+                    const SizedBox(width: 12),
+                    Text('$deleted ficheiros eliminados!'),
+                  ],
+                ),
+                backgroundColor: const Color(0xFF2D2D2D),
+              ),
+            );
           }
-        }
-        groups.removeWhere((group) => group.length <= 1);
-      });
-    });
+        },
+      );
+    }
+  }
 
-    // Fechar loading
+  void _cleanAll() async {
+    if (_cleanerService.totalDuplicatesCount == 0) return;
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E1E),
+        title: const Text('Limpar Todos os Duplicados', style: TextStyle(color: Colors.white)),
+        content: Text(
+          'Vai eliminar ${_cleanerService.totalDuplicatesCount} ficheiros duplicados.\nEsta ação não pode ser desfeita.',
+          style: const TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF00E676)),
+            child: const Text('Eliminar Todos', style: TextStyle(color: Colors.black)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(color: Color(0xFF00E676)),
+      ),
+    );
+
+    final deleted = await _cleanerService.deleteAllDuplicates();
+
     if (mounted) {
       Navigator.pop(context);
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const Icon(Icons.celebration, color: Color(0xFF00E676)),
-              const SizedBox(width: 12),
-              Text('$deleted ficheiros eliminados! ${_scannerService.formatSize(freedSize)} libertados'),
-            ],
-          ),
-          backgroundColor: const Color(0xFF2D2D2D),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        ),
+      setState(() {});
+
+      _adService.showInterstitialAd(
+        onDismissed: () {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Row(
+                  children: [
+                    const Icon(Icons.celebration, color: Color(0xFF00E676)),
+                    const SizedBox(width: 12),
+                    Text('Limpeza total! $deleted ficheiros eliminados!'),
+                  ],
+                ),
+                backgroundColor: const Color(0xFF2D2D2D),
+                duration: const Duration(seconds: 4),
+              ),
+            );
+          }
+        },
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final totalDuplicates = _cleanerService.totalDuplicatesCount;
+    final totalSize = _cleanerService.totalDuplicatesSize;
+
     return Scaffold(
       backgroundColor: const Color(0xFF121212),
       appBar: AppBar(
@@ -196,11 +192,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
         ),
         title: const Text(
           'Resultados',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 22,
-          ),
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 22),
         ),
         centerTitle: true,
       ),
@@ -216,9 +208,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
                 decoration: BoxDecoration(
                   color: const Color(0xFF1E1E1E),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: const Color(0xFF00E676).withOpacity(0.3),
-                  ),
+                  border: Border.all(color: const Color(0xFF00E676).withOpacity(0.3)),
                 ),
                 child: Column(
                   children: [
@@ -235,12 +225,9 @@ class _ResultsScreenState extends State<ResultsScreen> {
                     const SizedBox(height: 8),
                     Text(
                       totalDuplicates == 0
-                          ? 'O seu dispositivo está limpo!'
-                          : 'Pode libertar ${_scannerService.formatSize(totalDuplicateSize)}',
-                      style: const TextStyle(
-                        color: Color(0xFF00E676),
-                        fontSize: 16,
-                      ),
+                          ? 'A sua galeria está limpa!'
+                          : 'Pode libertar ${_cleanerService.formatSize(totalSize)}',
+                      style: const TextStyle(color: Color(0xFF00E676), fontSize: 16),
                     ),
                   ],
                 ),
@@ -252,30 +239,10 @@ class _ResultsScreenState extends State<ResultsScreen> {
               child: ListView(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 children: [
-                  _buildCategoryTile(
-                    FileType.photo,
-                    'Fotos',
-                    Icons.photo_library,
-                    const Color(0xFF2196F3),
-                  ),
-                  _buildCategoryTile(
-                    FileType.screenshot,
-                    'Screenshots',
-                    Icons.smartphone,
-                    const Color(0xFF9C27B0),
-                  ),
-                  _buildCategoryTile(
-                    FileType.video,
-                    'Vídeos',
-                    Icons.videocam,
-                    const Color(0xFFFF9800),
-                  ),
-                  _buildCategoryTile(
-                    FileType.music,
-                    'Músicas',
-                    Icons.music_note,
-                    const Color(0xFFE91E63),
-                  ),
+                  _buildCategoryTile(MediaCategory.photos, 'Fotos', Icons.photo_library, const Color(0xFF2196F3)),
+                  _buildCategoryTile(MediaCategory.screenshots, 'Screenshots', Icons.screenshot, const Color(0xFF9C27B0)),
+                  _buildCategoryTile(MediaCategory.videos, 'Vídeos', Icons.videocam, const Color(0xFFFF9800)),
+                  _buildCategoryTile(MediaCategory.music, 'Músicas', Icons.music_note, const Color(0xFFE91E63)),
                 ],
               ),
             ),
@@ -285,7 +252,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
               Padding(
                 padding: const EdgeInsets.all(20),
                 child: GestureDetector(
-                  onTap: _cleanAllDuplicates,
+                  onTap: _cleanAll,
                   child: Container(
                     width: double.infinity,
                     height: 60,
@@ -315,28 +282,42 @@ class _ResultsScreenState extends State<ResultsScreen> {
                   ),
                 ),
               ),
+
+            // Banner Ad
+            if (_isBannerLoaded && _bannerAd != null)
+              Container(
+                width: _bannerAd!.size.width.toDouble(),
+                height: _bannerAd!.size.height.toDouble(),
+                child: AdWidget(ad: _bannerAd!),
+              ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildCategoryTile(FileType type, String name, IconData icon, Color color) {
-    final allCount = _allFiles[type]?.length ?? 0;
-    final dupCount = _getCategoryDuplicateCount(type);
-    final dupSize = _getCategoryDuplicateSize(type);
+  Widget _buildCategoryTile(MediaCategory category, String name, IconData icon, Color color) {
+    final allCount = _cleanerService.allMedia[category]?.length ?? 0;
+    final duplicateGroups = _cleanerService.duplicates[category] ?? [];
+    
+    int dupCount = 0;
+    int dupSize = 0;
+    for (var group in duplicateGroups) {
+      dupCount += group.length - 1;
+      for (int i = 1; i < group.length; i++) {
+        dupSize += group[i].size;
+      }
+    }
 
     return GestureDetector(
-      onTap: () => _openCategory(type),
+      onTap: dupCount > 0 ? () => _cleanCategory(category) : null,
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: const Color(0xFF1E1E1E),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: color.withOpacity(0.3),
-          ),
+          border: Border.all(color: color.withOpacity(0.3)),
         ),
         child: Row(
           children: [
@@ -365,31 +346,24 @@ class _ResultsScreenState extends State<ResultsScreen> {
                   const SizedBox(height: 4),
                   Text(
                     '$allCount total • $dupCount duplicados',
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.6),
-                      fontSize: 13,
-                    ),
+                    style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 13),
                   ),
                 ],
               ),
             ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  _scannerService.formatSize(dupSize),
-                  style: TextStyle(
-                    color: color,
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
+            if (dupCount > 0)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    _cleanerService.formatSize(dupSize),
+                    style: TextStyle(color: color, fontSize: 14, fontWeight: FontWeight.bold),
                   ),
-                ),
-                const Icon(
-                  Icons.chevron_right,
-                  color: Colors.white54,
-                ),
-              ],
-            ),
+                  const Icon(Icons.chevron_right, color: Colors.white54),
+                ],
+              ),
+            if (dupCount == 0)
+              const Icon(Icons.check_circle, color: Color(0xFF00E676)),
           ],
         ),
       ),

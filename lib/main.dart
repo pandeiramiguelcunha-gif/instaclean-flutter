@@ -17,7 +17,7 @@ class InstaCleanApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Instaclean PMC',
+      title: 'InstaClean PMC',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         brightness: Brightness.dark,

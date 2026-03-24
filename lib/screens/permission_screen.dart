@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../services/permission_service.dart';
+import '../services/cleaner_service.dart';
 import 'dashboard_screen.dart';
 
 class PermissionScreen extends StatefulWidget {
@@ -10,23 +10,19 @@ class PermissionScreen extends StatefulWidget {
 }
 
 class _PermissionScreenState extends State<PermissionScreen> {
-  final PermissionService _permissionService = PermissionService();
+  final CleanerService _cleanerService = CleanerService();
   bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    _checkExistingPermissions();
+    _checkPermissions();
   }
 
-  Future<void> _checkExistingPermissions() async {
-    try {
-      final hasPermissions = await _permissionService.checkPermissions();
-      if (hasPermissions && mounted) {
-        _navigateToDashboard();
-      }
-    } catch (e) {
-      debugPrint('Erro ao verificar permissões: $e');
+  Future<void> _checkPermissions() async {
+    final hasPermission = await _cleanerService.checkPermission();
+    if (hasPermission && mounted) {
+      _navigateToDashboard();
     }
   }
 
@@ -35,34 +31,21 @@ class _PermissionScreenState extends State<PermissionScreen> {
     
     setState(() => _isLoading = true);
     
-    try {
-      final granted = await _permissionService.requestAllPermissions(context);
-      
-      if (granted && mounted) {
-        _navigateToDashboard();
-      } else if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Por favor, permita o acesso aos ficheiros para continuar'),
-            backgroundColor: Colors.orange,
-            duration: Duration(seconds: 3),
-          ),
-        );
-      }
-    } catch (e) {
-      debugPrint('Erro ao pedir permissões: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erro: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+    final granted = await _cleanerService.requestPermission();
+    
+    if (granted && mounted) {
+      _navigateToDashboard();
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Por favor, permita o acesso à galeria'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+    }
+    
+    if (mounted) {
+      setState(() => _isLoading = false);
     }
   }
 
@@ -102,7 +85,6 @@ class _PermissionScreenState extends State<PermissionScreen> {
               
               const SizedBox(height: 24),
               
-              // Título
               const Column(
                 children: [
                   Text(
@@ -127,7 +109,6 @@ class _PermissionScreenState extends State<PermissionScreen> {
               
               const SizedBox(height: 48),
               
-              // Ícone de pasta
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
@@ -135,7 +116,7 @@ class _PermissionScreenState extends State<PermissionScreen> {
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: const Icon(
-                  Icons.folder_open,
+                  Icons.photo_library,
                   size: 60,
                   color: Color(0xFF00E676),
                 ),
@@ -144,7 +125,7 @@ class _PermissionScreenState extends State<PermissionScreen> {
               const SizedBox(height: 32),
               
               const Text(
-                'Permissões Necessárias',
+                'Acesso à Galeria',
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 24,
@@ -155,7 +136,7 @@ class _PermissionScreenState extends State<PermissionScreen> {
               const SizedBox(height: 16),
               
               Text(
-                'Para analisar e limpar ficheiros duplicados, o InstaClean PMC precisa de acesso aos seus ficheiros.',
+                'Para encontrar e limpar ficheiros duplicados, o InstaClean PMC precisa de acesso à sua galeria.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: Colors.white.withOpacity(0.7),
@@ -165,14 +146,12 @@ class _PermissionScreenState extends State<PermissionScreen> {
               
               const SizedBox(height: 24),
               
-              // Lista de permissões
-              _buildPermissionItem(Icons.photo_library, 'Fotos e Imagens'),
+              _buildPermissionItem(Icons.photo, 'Fotos'),
               _buildPermissionItem(Icons.videocam, 'Vídeos'),
-              _buildPermissionItem(Icons.music_note, 'Músicas'),
+              _buildPermissionItem(Icons.screenshot, 'Screenshots'),
               
               const SizedBox(height: 32),
               
-              // Botão de permitir
               GestureDetector(
                 onTap: _isLoading ? null : _requestPermissions,
                 child: Container(
@@ -214,20 +193,6 @@ class _PermissionScreenState extends State<PermissionScreen> {
                   ),
                 ),
               ),
-              
-              const SizedBox(height: 16),
-              
-              // Botão para pular (desenvolvimento)
-              TextButton(
-                onPressed: _navigateToDashboard,
-                child: Text(
-                  'Continuar sem permissões (modo demo)',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.5),
-                    fontSize: 12,
-                  ),
-                ),
-              ),
             ],
           ),
         ),
@@ -249,19 +214,7 @@ class _PermissionScreenState extends State<PermissionScreen> {
             child: Icon(icon, color: const Color(0xFF00E676), size: 20),
           ),
           const SizedBox(width: 16),
-          Text(
-            title,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-            ),
-          ),
-          const Spacer(),
-          Icon(
-            Icons.check_circle,
-            color: Colors.white.withOpacity(0.3),
-            size: 20,
-          ),
+          Text(title, style: const TextStyle(color: Colors.white, fontSize: 16)),
         ],
       ),
     );
