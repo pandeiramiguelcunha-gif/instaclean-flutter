@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'screens/dashboard_screen.dart';
+import 'screens/permission_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -24,7 +24,7 @@ class InstaCleanApp extends StatelessWidget {
         ),
         useMaterial3: true,
       ),
-      home: const DashboardScreen(),
+      home: const PermissionScreen(),
     );
   }
 }
