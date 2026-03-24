@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.instaclean.instaclean">
+    package="com.instaclean.app">
 
     <!-- Permissões para aceder a ficheiros -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
@@ -12,12 +12,19 @@
     <uses-permission android:name="android.permission.READ_CONTACTS" />
     <uses-permission android:name="android.permission.WRITE_CONTACTS" />
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <application
-        android:label="InstaClean PMC"
+        android:label="Instaclean - Limpeza Inteligente"
         android:name="${applicationName}"
-        android:icon="@android:drawable/sym_def_app_icon"
+        android:icon="@mipmap/ic_launcher"
         android:requestLegacyExternalStorage="true">
+        
+        <!-- AdMob App ID - SUBSTITUA PELO SEU ID -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-XXXXXXXXXXXXXXXX~XXXXXXXXXX"/>
+        
         <activity
             android:name=".MainActivity"
             android:exported="true"

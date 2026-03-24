@@ -1,5 +1,5 @@
 name: instaclean_pmc
-description: InstaClean PMC - App de limpeza de memória
+description: Instaclean - Limpeza Inteligente
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -16,6 +16,8 @@ dependencies:
   path: ^1.9.0
   contacts_service: ^0.6.3
   device_info_plus: ^9.1.1
+  google_mobile_ads: ^4.0.0
+  firebase_core: ^2.24.2
 
 dev_dependencies:
   flutter_test:

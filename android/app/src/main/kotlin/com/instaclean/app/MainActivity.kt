@@ -1,4 +1,4 @@
-package com.instaclean.instaclean
+package com.instaclean.app
 
 import io.flutter.embedding.android.FlutterActivity
 

@@ -1,24 +1,42 @@
 workflows:
-  default-workflow:
-    name: Build InstaClean Android
-    max_build_duration: 60
+  release-workflow:
+    name: Build InstaClean Release
+    max_build_duration: 120
     instance_type: mac_mini_m2
+    
     environment:
       flutter: stable
       java: 17
+      groups:
+        - keystore_credentials
+      vars:
+        PACKAGE_NAME: "com.instaclean.app"
+    
     scripts:
-      - name: Instalar Dependencias
+      - name: Configurar keystore
+        script: |
+          echo $CM_KEYSTORE | base64 --decode > $CM_BUILD_DIR/android/app/instaclean-release-key.jks
+          cat > $CM_BUILD_DIR/android/key.properties << EOF
+          storePassword=$CM_KEYSTORE_PASSWORD
+          keyPassword=$CM_KEY_PASSWORD
+          keyAlias=$CM_KEY_ALIAS
+          storeFile=$CM_BUILD_DIR/android/app/instaclean-release-key.jks
+          EOF
+          
+      - name: Instalar dependências
         script: |
           flutter pub get
           
-      - name: Build APK Release
-        script: |
-          flutter build apk --release
-          
-      - name: Build AAB Release
+      - name: Build App Bundle (AAB)
         script: |
           flutter build appbundle --release
           
     artifacts:
-      - build/**/outputs/**/*.apk
       - build/**/outputs/**/*.aab
+      - build/**/outputs/**/mapping.txt
+      
+    publishing:
+      google_play:
+        credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
+        track: internal
+        submit_as_draft: true

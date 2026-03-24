@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'screens/permission_screen.dart';
+import 'services/ad_service.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Inicializar AdMob
+  await AdService().initialize();
+  
   runApp(const InstaCleanApp());
 }
 
@@ -12,7 +18,7 @@ class InstaCleanApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'InstaClean PMC',
+      title: 'Instaclean - Limpeza Inteligente',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         brightness: Brightness.dark,
