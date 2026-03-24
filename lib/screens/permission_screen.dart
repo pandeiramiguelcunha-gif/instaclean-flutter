@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/cleaner_service.dart';
+import '../services/analytics_service.dart';
 import 'dashboard_screen.dart';
 
 class PermissionScreen extends StatefulWidget {
@@ -11,6 +12,7 @@ class PermissionScreen extends StatefulWidget {
 
 class _PermissionScreenState extends State<PermissionScreen> {
   final CleanerService _cleanerService = CleanerService();
+  final AnalyticsService _analyticsService = AnalyticsService();
   bool _isLoading = false;
 
   @override
@@ -34,6 +36,7 @@ class _PermissionScreenState extends State<PermissionScreen> {
     final granted = await _cleanerService.requestPermission();
     
     if (granted && mounted) {
+      _analyticsService.logPermissaoConcedida();
       _navigateToDashboard();
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(

@@ -52,17 +52,18 @@ Build a Flutter mobile application called "InstaClean PMC" - a phone storage cle
 - [x] Category views: Photos, Screenshots, Videos, Music
 - [x] Manual file selection with grid view and thumbnails
 - [x] Branding: "InstaClean PMC"
-- [x] AdMob integration (test IDs - ca-app-pub-3940256099942544)
+- [x] AdMob integration (real IDs - ca-app-pub-2353019524746156)
+- [x] Firebase Analytics with `limpeza_concluida` event tracking
+- [x] Custom app icon (blue shield + white broom) via flutter_launcher_icons
+- [x] Release signing config (Codemagic env vars + key.properties)
+- [x] ProGuard rules for release build
 - [x] Codemagic CI/CD pipeline (AAB + APK builds)
 - [x] Android native project structure (compileSdk 36, AGP 8.7.0)
-- [x] Fixed all compilation errors (AssetType + PhotoManager import)
 
-## Pending Items (Require User Action)
-- [x] **P1**: AdMob configured with real IDs (App: ca-app-pub-2353019524746156~7848109235)
-- [x] **P1**: Firebase integrated with `google-services.json` (project: instacleanpmc)
-- [ ] **P1**: Configure release signing keystore (user must provide alias, key password, store password)
+## Pending Items
+- [ ] **P1**: Configure keystore in Codemagic (upload keystore + set env vars)
 - [ ] **P2**: Google Play Store publication (after signed AAB is built)
 
 ## Current Status
-- **Build Status**: Ready for Codemagic build (all compilation errors fixed)
-- **Mocked**: None - AdMob and Firebase are configured with real credentials
+- **Build Status**: Production-ready configuration
+- **Mocked**: None - All integrations use real credentials

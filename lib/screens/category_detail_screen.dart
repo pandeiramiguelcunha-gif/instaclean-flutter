@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:photo_manager/photo_manager.dart';
 import '../services/cleaner_service.dart';
 import '../services/ad_service.dart';
+import '../services/analytics_service.dart';
 
 class CategoryDetailScreen extends StatefulWidget {
   final MediaCategory category;
@@ -25,6 +26,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen>
   late TabController _tabController;
   final CleanerService _cleanerService = CleanerService();
   final AdService _adService = AdService();
+  final AnalyticsService _analyticsService = AnalyticsService();
   
   List<MediaItem> _allItems = [];
   List<MediaItem> _duplicateItems = [];
@@ -164,6 +166,13 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen>
     _allItems.removeWhere((item) => item.isSelected);
     _duplicateItems.removeWhere((item) => item.isSelected);
     _selectMode = false;
+
+    // Registar evento no Firebase Analytics
+    _analyticsService.logLimpezaConcluida(
+      ficheirosEliminados: deleted,
+      categoria: widget.categoryName,
+      tamanhoLibertado: _selectedSize,
+    );
 
     if (mounted) {
       Navigator.pop(context); // Fechar loading

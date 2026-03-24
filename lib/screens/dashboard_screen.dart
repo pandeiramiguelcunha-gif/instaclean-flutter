@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:math' as math;
 import '../services/cleaner_service.dart';
 import '../services/ad_service.dart';
+import '../services/analytics_service.dart';
 import 'results_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -18,6 +19,7 @@ class _DashboardScreenState extends State<DashboardScreen>
   
   final CleanerService _cleanerService = CleanerService();
   final AdService _adService = AdService();
+  final AnalyticsService _analyticsService = AnalyticsService();
   
   double usedStorage = 67.5;
   double totalStorage = 128.0;
@@ -55,6 +57,8 @@ class _DashboardScreenState extends State<DashboardScreen>
       scanStatus = 'A iniciar análise...';
     });
 
+    _analyticsService.logScanIniciado();
+
     await _cleanerService.scanAllMedia(
       onProgress: (status, progress) {
         if (mounted) {
@@ -66,6 +70,14 @@ class _DashboardScreenState extends State<DashboardScreen>
     );
 
     if (mounted) {
+      // Registar scan concluído
+      int totalFiles = 0;
+      _cleanerService.allMedia.forEach((k, v) => totalFiles += v.length);
+      _analyticsService.logScanConcluido(
+        totalFicheiros: totalFiles,
+        duplicadosEncontrados: _cleanerService.totalDuplicatesCount,
+      );
+
       setState(() {
         isAnalyzing = false;
         scanStatus = '';

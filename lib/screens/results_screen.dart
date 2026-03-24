@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../services/cleaner_service.dart';
 import '../services/ad_service.dart';
+import '../services/analytics_service.dart';
 import 'category_detail_screen.dart';
 
 class ResultsScreen extends StatefulWidget {
@@ -14,6 +15,7 @@ class ResultsScreen extends StatefulWidget {
 class _ResultsScreenState extends State<ResultsScreen> {
   final CleanerService _cleanerService = CleanerService();
   final AdService _adService = AdService();
+  final AnalyticsService _analyticsService = AnalyticsService();
   BannerAd? _bannerAd;
   bool _isBannerLoaded = false;
 
@@ -93,6 +95,9 @@ class _ResultsScreenState extends State<ResultsScreen> {
     );
 
     final deleted = await _cleanerService.deleteAllDuplicates();
+
+    // Registar evento no Firebase Analytics
+    _analyticsService.logLimpezaTotal(ficheirosEliminados: deleted);
 
     if (mounted) {
       Navigator.pop(context);

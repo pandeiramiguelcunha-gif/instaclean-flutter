@@ -6,6 +6,8 @@ workflows:
     environment:
       flutter: stable
       java: 17
+      groups:
+        - keystore_credentials
     scripts:
       - name: Instalar dependencias
         script: |
@@ -14,6 +16,14 @@ workflows:
       - name: Gerar icones do app
         script: |
           dart run flutter_launcher_icons
+
+      - name: Configurar keystore
+        script: |
+          if [ -n "$CM_KEYSTORE_PATH" ]; then
+            echo "Keystore configurado: $CM_KEYSTORE_PATH"
+          else
+            echo "AVISO: Keystore não configurado. Build será assinado com debug key."
+          fi
           
       - name: Build App Bundle (AAB) para Play Store
         script: |
