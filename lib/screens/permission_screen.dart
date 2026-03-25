@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/cleaner_service.dart';
 import '../services/analytics_service.dart';
+import '../services/ad_service.dart';
 import 'dashboard_screen.dart';
 
 class PermissionScreen extends StatefulWidget {
@@ -13,11 +14,14 @@ class PermissionScreen extends StatefulWidget {
 class _PermissionScreenState extends State<PermissionScreen> {
   final CleanerService _cleanerService = CleanerService();
   final AnalyticsService _analyticsService = AnalyticsService();
+  final AdService _adService = AdService();
   bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
+    // Iniciar consentimento GDPR/UMP (precisa de Activity context)
+    _adService.initializeWithConsent();
     _checkPermissions();
   }
 
