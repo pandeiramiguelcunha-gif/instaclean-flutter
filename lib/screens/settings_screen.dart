@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'privacy_policy_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
+
+  static const String privacyPolicyUrl =
+      'https://pandeiramiguelcunha-gif.github.io/instaclean-flutter/privacy-policy.html';
 
   void _resetConsent(BuildContext context) {
     ConsentInformation.instance.reset();
@@ -13,6 +17,13 @@ class SettingsScreen extends StatelessWidget {
         backgroundColor: Color(0xFF2D2D2D),
       ),
     );
+  }
+
+  Future<void> _openPrivacyOnline() async {
+    final uri = Uri.parse(privacyPolicyUrl);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
   }
 
   @override
@@ -36,7 +47,6 @@ class SettingsScreen extends StatelessWidget {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            // App Info
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(20),
@@ -68,7 +78,6 @@ class SettingsScreen extends StatelessWidget {
 
             const SizedBox(height: 20),
 
-            // Privacidade
             _buildSettingsTile(
               icon: Icons.shield,
               title: 'Politica de Privacidade',
@@ -84,7 +93,16 @@ class SettingsScreen extends StatelessWidget {
 
             const SizedBox(height: 12),
 
-            // Consentimento de anúncios
+            _buildSettingsTile(
+              icon: Icons.open_in_new,
+              title: 'Privacidade Online',
+              subtitle: 'Abrir politica no navegador',
+              color: const Color(0xFF7C4DFF),
+              onTap: _openPrivacyOnline,
+            ),
+
+            const SizedBox(height: 12),
+
             _buildSettingsTile(
               icon: Icons.ads_click,
               title: 'Consentimento de Anuncios',
@@ -95,7 +113,6 @@ class SettingsScreen extends StatelessWidget {
 
             const SizedBox(height: 12),
 
-            // Permissões
             _buildSettingsTile(
               icon: Icons.folder_open,
               title: 'Permissoes',
@@ -114,7 +131,6 @@ class SettingsScreen extends StatelessWidget {
 
             const Spacer(),
 
-            // Footer
             Text(
               'Feito com dedicacao em Portugal',
               style: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 13),

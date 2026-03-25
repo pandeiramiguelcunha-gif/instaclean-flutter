@@ -59,6 +59,8 @@ Build a Flutter mobile application called "InstaClean PMC" - a phone storage cle
 - [x] Branding: "InstaClean PMC"
 - [x] AdMob integration (real IDs - ca-app-pub-2353019524746156)
 - [x] Firebase Analytics with `limpeza_concluida` event tracking
+- [x] URL launcher for external privacy policy link
+- [x] Settings screen (Privacy Policy, Consent, Permissions)
 - [x] Custom app icon (blue shield + white broom) via flutter_launcher_icons
 - [x] Release signing config (Codemagic env vars + key.properties)
 - [x] ProGuard rules for release build
