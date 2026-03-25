@@ -33,13 +33,18 @@ Build a Flutter mobile application called "InstaClean PMC" - a phone storage cle
 ├── lib/
 │   ├── main.dart         # App entry point, theme, routing
 │   ├── screens/
-│   │   ├── permission_screen.dart     # Permission request flow
-│   │   ├── dashboard_screen.dart      # Main screen with gauge
+│   │   ├── permission_screen.dart     # Permission request + UMP consent
+│   │   ├── dashboard_screen.dart      # Main screen with gauge + settings
 │   │   ├── results_screen.dart        # Cleaning categories
-│   │   └── category_detail_screen.dart # File grid with selection/deletion
+│   │   ├── category_detail_screen.dart # File grid with selection/deletion
+│   │   ├── settings_screen.dart       # App settings
+│   │   └── privacy_policy_screen.dart # GDPR/RGPD privacy policy
 │   └── services/
 │       ├── cleaner_service.dart       # Core scan & clean logic
-│       └── ad_service.dart            # AdMob ad display
+│       ├── ad_service.dart            # AdMob + UMP/GDPR consent
+│       └── analytics_service.dart     # Firebase Analytics events
+├── assets/
+│   └── app_icon.png      # App launcher icon
 ├── pubspec.yaml          # Dependencies
 └── codemagic.yaml        # CI/CD config
 ```

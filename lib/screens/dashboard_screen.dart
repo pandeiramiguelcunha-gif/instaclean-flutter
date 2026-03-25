@@ -4,6 +4,7 @@ import '../services/cleaner_service.dart';
 import '../services/ad_service.dart';
 import '../services/analytics_service.dart';
 import 'results_screen.dart';
+import 'settings_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -99,6 +100,17 @@ class _DashboardScreenState extends State<DashboardScreen>
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings, color: Colors.white54),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const SettingsScreen()),
+              );
+            },
+          ),
+        ],
         title: Column(
           mainAxisSize: MainAxisSize.min,
           children: const [
