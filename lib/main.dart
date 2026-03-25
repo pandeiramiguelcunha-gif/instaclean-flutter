@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'screens/permission_screen.dart';
 import 'services/analytics_service.dart';
+import 'services/ad_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -11,8 +11,8 @@ void main() async {
   // Inicializar Firebase
   await Firebase.initializeApp();
   
-  // Inicializar AdMob
-  await MobileAds.instance.initialize();
+  // Inicializar AdMob com consentimento GDPR (UMP)
+  await AdService().initialize();
   
   runApp(const InstaCleanApp());
 }
