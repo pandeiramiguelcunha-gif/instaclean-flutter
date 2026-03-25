@@ -6,8 +6,6 @@ workflows:
     environment:
       flutter: stable
       java: 17
-      groups:
-        - keystore_credentials
     scripts:
       - name: Instalar dependencias
         script: |
