@@ -16,63 +16,73 @@ class AdService {
   static const String bannerAdUnitId = 'ca-app-pub-2353019524746156/4464707500';
   static const String interstitialAdUnitId = 'ca-app-pub-2353019524746156/9525462496';
 
-  // Inicializar SDK com UMP (GDPR) - chamar no primeiro ecrã
+  // Inicializar SDK com UMP (GDPR)
   Future<void> initializeWithConsent() async {
     if (_isInitializing || _isSdkInitialized) return;
     _isInitializing = true;
 
     debugPrint('[AdMob] === INICIO INICIALIZACAO ===');
-    debugPrint('[AdMob] App ID: ca-app-pub-2353019524746156~7848109235');
-    debugPrint('[AdMob] Banner ID: $bannerAdUnitId');
-    debugPrint('[AdMob] Interstitial ID: $interstitialAdUnitId');
 
     final completer = Completer<void>();
-
-    // Passo 1: Pedir info de consentimento (GDPR)
     final params = ConsentRequestParameters();
 
     ConsentInformation.instance.requestConsentInfoUpdate(
       params,
       () async {
-        debugPrint('[AdMob] UMP info atualizada. Status: ${ConsentInformation.instance.getConsentStatus()}');
+        final status = ConsentInformation.instance.getConsentStatus();
+        debugPrint('[AdMob] UMP status: $status');
 
-        // Passo 2: Mostrar formulário se necessário (EU/UK)
-        ConsentForm.loadAndShowConsentFormIfRequired(
-          (FormError? formError) {
-            if (formError != null) {
-              debugPrint('[AdMob] Erro formulário UMP: code=${formError.errorCode}, msg=${formError.message}');
-            } else {
-              debugPrint('[AdMob] Consentimento tratado com sucesso');
-            }
-
-            // Passo 3: Verificar se pode pedir anúncios
-            _checkAndInitializeAds(completer);
-          },
-        );
+        if (await ConsentInformation.instance.isConsentFormAvailable()) {
+          debugPrint('[AdMob] Formulario GDPR disponivel');
+          _loadAndShowConsentForm(completer);
+        } else {
+          debugPrint('[AdMob] Formulario GDPR nao necessario');
+          await _initializeSdk();
+          if (!completer.isCompleted) completer.complete();
+        }
       },
       (FormError error) {
-        debugPrint('[AdMob] Erro UMP update: code=${error.errorCode}, msg=${error.message}');
-        // Mesmo com erro UMP, tentar inicializar
-        _checkAndInitializeAds(completer);
+        debugPrint('[AdMob] Erro UMP: ${error.message}');
+        _initializeSdk().then((_) {
+          if (!completer.isCompleted) completer.complete();
+        });
       },
     );
 
     return completer.future;
   }
 
-  Future<void> _checkAndInitializeAds(Completer<void> completer) async {
-    final canRequest = await ConsentInformation.instance.canRequestAds();
-    debugPrint('[AdMob] canRequestAds: $canRequest');
+  void _loadAndShowConsentForm(Completer<void> completer) {
+    ConsentForm.loadConsentForm(
+      (ConsentForm consentForm) {
+        final status = ConsentInformation.instance.getConsentStatus();
+        debugPrint('[AdMob] Consent status apos load: $status');
 
-    if (canRequest) {
-      await _initializeSdk();
-    } else {
-      debugPrint('[AdMob] AVISO: Sem permissão para pedir anúncios (consentimento negado)');
-      // Tentar inicializar mesmo assim para anúncios não-personalizados
-      await _initializeSdk();
-    }
-
-    if (!completer.isCompleted) completer.complete();
+        if (status == ConsentStatus.required) {
+          consentForm.show((FormError? error) {
+            if (error != null) {
+              debugPrint('[AdMob] Erro formulario: ${error.message}');
+            } else {
+              debugPrint('[AdMob] Consentimento dado pelo utilizador');
+            }
+            _initializeSdk().then((_) {
+              if (!completer.isCompleted) completer.complete();
+            });
+          });
+        } else {
+          debugPrint('[AdMob] Consentimento ja obtido ou nao necessario');
+          _initializeSdk().then((_) {
+            if (!completer.isCompleted) completer.complete();
+          });
+        }
+      },
+      (FormError error) {
+        debugPrint('[AdMob] Erro ao carregar formulario: ${error.message}');
+        _initializeSdk().then((_) {
+          if (!completer.isCompleted) completer.complete();
+        });
+      },
+    );
   }
 
   Future<void> _initializeSdk() async {
@@ -81,16 +91,16 @@ class AdService {
     debugPrint('[AdMob] A inicializar Mobile Ads SDK...');
     await MobileAds.instance.initialize();
     _isSdkInitialized = true;
-    debugPrint('[AdMob] SDK inicializado com sucesso!');
+    debugPrint('[AdMob] SDK inicializado!');
 
-    // Pré-carregar intersticial
+    // Pre-carregar intersticial
     loadInterstitialAd();
   }
 
   // Carregar Banner
   void loadBannerAd({Function()? onLoaded}) {
     if (!_isSdkInitialized) {
-      debugPrint('[AdMob] SDK não inicializado, a inicializar primeiro...');
+      debugPrint('[AdMob] SDK nao inicializado, a inicializar...');
       MobileAds.instance.initialize().then((_) {
         _isSdkInitialized = true;
         _loadBanner(onLoaded: onLoaded);
@@ -109,16 +119,14 @@ class AdService {
       request: const AdRequest(),
       listener: BannerAdListener(
         onAdLoaded: (ad) {
-          debugPrint('[AdMob] Banner CARREGADO com sucesso!');
+          debugPrint('[AdMob] Banner CARREGADO!');
           onLoaded?.call();
         },
         onAdFailedToLoad: (ad, error) {
-          debugPrint('[AdMob] ERRO Banner: code=${error.code}, msg=${error.message}, domain=${error.domain}');
+          debugPrint('[AdMob] ERRO Banner: code=${error.code}, msg=${error.message}');
           ad.dispose();
           bannerAd = null;
-
-          // Retry após 30 segundos
-          debugPrint('[AdMob] Retry banner em 30s...');
+          // Retry em 30s
           Future.delayed(const Duration(seconds: 30), () {
             _loadBanner(onLoaded: onLoaded);
           });
@@ -135,15 +143,13 @@ class AdService {
       request: const AdRequest(),
       adLoadCallback: InterstitialAdLoadCallback(
         onAdLoaded: (ad) {
-          debugPrint('[AdMob] Intersticial CARREGADO com sucesso!');
+          debugPrint('[AdMob] Intersticial CARREGADO!');
           interstitialAd = ad;
         },
         onAdFailedToLoad: (error) {
-          debugPrint('[AdMob] ERRO Intersticial: code=${error.code}, msg=${error.message}, domain=${error.domain}');
+          debugPrint('[AdMob] ERRO Intersticial: code=${error.code}, msg=${error.message}');
           interstitialAd = null;
-
-          // Retry após 30 segundos
-          debugPrint('[AdMob] Retry intersticial em 30s...');
+          // Retry em 30s
           Future.delayed(const Duration(seconds: 30), () {
             loadInterstitialAd();
           });
@@ -152,10 +158,10 @@ class AdService {
     );
   }
 
-  // Mostrar Intersticial (chamado imediatamente após eliminar)
+  // Mostrar Intersticial
   void showInterstitialAd({Function()? onDismissed}) {
     if (interstitialAd == null) {
-      debugPrint('[AdMob] Intersticial não disponível');
+      debugPrint('[AdMob] Intersticial nao disponivel');
       loadInterstitialAd();
       onDismissed?.call();
       return;
@@ -164,7 +170,7 @@ class AdService {
     debugPrint('[AdMob] A MOSTRAR intersticial...');
     interstitialAd!.fullScreenContentCallback = FullScreenContentCallback(
       onAdShowedFullScreenContent: (ad) {
-        debugPrint('[AdMob] Intersticial MOSTRADO ao utilizador');
+        debugPrint('[AdMob] Intersticial MOSTRADO');
       },
       onAdDismissedFullScreenContent: (ad) {
         debugPrint('[AdMob] Intersticial fechado');
@@ -174,7 +180,7 @@ class AdService {
         onDismissed?.call();
       },
       onAdFailedToShowFullScreenContent: (ad, error) {
-        debugPrint('[AdMob] ERRO ao mostrar: ${error.message}');
+        debugPrint('[AdMob] ERRO mostrar: ${error.message}');
         ad.dispose();
         interstitialAd = null;
         loadInterstitialAd();
