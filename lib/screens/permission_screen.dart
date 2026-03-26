@@ -20,8 +20,7 @@ class _PermissionScreenState extends State<PermissionScreen> {
   @override
   void initState() {
     super.initState();
-    // Iniciar consentimento GDPR/UMP (precisa de Activity context)
-    _adService.initializeWithConsent();
+    // UMP/GDPR já inicializado no main.dart
     _checkPermissions();
   }
 

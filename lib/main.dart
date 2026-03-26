@@ -2,14 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'screens/permission_screen.dart';
 import 'services/analytics_service.dart';
+import 'services/ad_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Inicializar Firebase
+  // 1. Inicializar Firebase
   await Firebase.initializeApp();
   
-  // AdMob é inicializado no PermissionScreen com consentimento GDPR
+  // 2. Inicializar AdMob + Consentimento GDPR (UMP) ANTES de qualquer ecrã
+  await AdService().initializeWithConsent();
+  
   runApp(const InstaCleanApp());
 }
 
