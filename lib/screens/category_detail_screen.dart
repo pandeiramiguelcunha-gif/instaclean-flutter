@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:typed_data';
 import 'package:photo_manager/photo_manager.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../services/cleaner_service.dart';
 import '../services/ad_service.dart';
 import '../services/analytics_service.dart';
@@ -32,13 +33,30 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen>
   List<MediaItem> _duplicateItems = [];
   bool _isLoading = true;
   bool _selectMode = false;
+  BannerAd? _bannerAd;
+  bool _isBannerLoaded = false;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     _loadItems();
+    // Pré-carregar intersticial e banner
     _adService.loadInterstitialAd();
+    _loadBannerAd();
+  }
+
+  void _loadBannerAd() {
+    _adService.loadBannerAd(
+      onLoaded: () {
+        if (mounted) {
+          setState(() {
+            _bannerAd = _adService.bannerAd;
+            _isBannerLoaded = true;
+          });
+        }
+      },
+    );
   }
 
   void _loadItems() {
@@ -245,11 +263,24 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen>
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator(color: Color(0xFF00E676)))
-          : TabBarView(
-              controller: _tabController,
+          : Column(
               children: [
-                _buildGrid(_allItems),
-                _buildGrid(_duplicateItems, isDuplicates: true),
+                Expanded(
+                  child: TabBarView(
+                    controller: _tabController,
+                    children: [
+                      _buildGrid(_allItems),
+                      _buildGrid(_duplicateItems, isDuplicates: true),
+                    ],
+                  ),
+                ),
+                // Banner Ad
+                if (_isBannerLoaded && _bannerAd != null)
+                  Container(
+                    width: _bannerAd!.size.width.toDouble(),
+                    height: _bannerAd!.size.height.toDouble(),
+                    child: AdWidget(ad: _bannerAd!),
+                  ),
               ],
             ),
       bottomNavigationBar: _selectMode && _selectedCount > 0

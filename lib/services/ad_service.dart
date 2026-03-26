@@ -161,12 +161,31 @@ class AdService {
   // Mostrar Intersticial
   void showInterstitialAd({Function()? onDismissed}) {
     if (interstitialAd == null) {
-      debugPrint('[AdMob] Intersticial nao disponivel');
-      loadInterstitialAd();
-      onDismissed?.call();
+      debugPrint('[AdMob] Intersticial nao disponivel, a tentar carregar e mostrar...');
+      // Tentar carregar e mostrar imediatamente
+      InterstitialAd.load(
+        adUnitId: interstitialAdUnitId,
+        request: const AdRequest(),
+        adLoadCallback: InterstitialAdLoadCallback(
+          onAdLoaded: (ad) {
+            debugPrint('[AdMob] Intersticial carregado de emergencia! A mostrar...');
+            interstitialAd = ad;
+            _showAd(onDismissed);
+          },
+          onAdFailedToLoad: (error) {
+            debugPrint('[AdMob] ERRO carregar emergencia: code=${error.code}, msg=${error.message}');
+            interstitialAd = null;
+            onDismissed?.call();
+          },
+        ),
+      );
       return;
     }
 
+    _showAd(onDismissed);
+  }
+
+  void _showAd(Function()? onDismissed) {
     debugPrint('[AdMob] A MOSTRAR intersticial...');
     interstitialAd!.fullScreenContentCallback = FullScreenContentCallback(
       onAdShowedFullScreenContent: (ad) {

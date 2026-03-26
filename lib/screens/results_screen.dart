@@ -23,22 +23,26 @@ class _ResultsScreenState extends State<ResultsScreen> {
   void initState() {
     super.initState();
     _loadBannerAd();
+    // Garantir que intersticial está pré-carregado
+    _adService.loadInterstitialAd();
   }
 
   void _loadBannerAd() {
     _adService.loadBannerAd(
       onLoaded: () {
-        setState(() {
-          _bannerAd = _adService.bannerAd;
-          _isBannerLoaded = true;
-        });
+        if (mounted) {
+          setState(() {
+            _bannerAd = _adService.bannerAd;
+            _isBannerLoaded = true;
+          });
+        }
       },
     );
   }
 
   @override
   void dispose() {
-    _adService.dispose();
+    // NAO chamar _adService.dispose() - é singleton, destrói anúncios globais
     super.dispose();
   }
 
