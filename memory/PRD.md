@@ -22,6 +22,7 @@ Flutter mobile app "InstaClean PMC" - a phone cleaner that finds and deletes dup
 - [x] Real file scanning engine with `photo_manager` + `crypto` hash dedup
 - [x] AdMob integration (Banner + Interstitial) with real Ad Unit IDs
 - [x] UMP SDK (GDPR consent form) before ad loading
+- [x] **READ_MEDIA_AUDIO permission removed** from AndroidManifest.xml (Feb 2026)
 - [x] Firebase Analytics (`scan_iniciado`, `scan_concluido`, `limpeza_concluida`, `permissao_concedida`)
 - [x] Professional app icon via `flutter_launcher_icons`
 - [x] R8/ProGuard rules for release build
@@ -30,7 +31,7 @@ Flutter mobile app "InstaClean PMC" - a phone cleaner that finds and deletes dup
 - [x] Google Play Console setup guidance (Data Safety, App Content, etc.)
 - [x] **Strict screenshot filtering** - only `.png`/`.jpg` from `/Screenshots/` path (Feb 2026)
 - [x] **Music feature completely removed** - enum, logic, UI, Android permissions (Feb 2026)
-- [x] **READ_MEDIA_AUDIO permission removed** from AndroidManifest.xml (Feb 2026)
+- [x] **Correção deteção de duplicados** - usa hash MD5 do ficheiro real em vez de thumbnails (Feb 2026)
 
 ## AdMob Configuration
 - App ID: `ca-app-pub-2353019524746156~7848109235`

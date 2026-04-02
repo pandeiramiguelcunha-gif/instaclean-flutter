@@ -208,13 +208,13 @@ class CleanerService {
     }
   }
 
-  // Encontrar duplicados - OPTIMIZADO
+  // Encontrar duplicados - usa HASH DO FICHEIRO REAL (não thumbnails)
   Future<List<List<MediaItem>>> _findDuplicatesOptimized(List<MediaItem> items) async {
     List<List<MediaItem>> duplicateGroups = [];
 
     if (items.length < 2) return duplicateGroups;
 
-    // Agrupar por tamanho (muito mais rápido que hash)
+    // Passo 1: Agrupar por tamanho exato (filtro rápido)
     Map<int, List<MediaItem>> sizeGroups = {};
     for (var item in items) {
       if (item.size > 0) {
@@ -222,31 +222,27 @@ class CleanerService {
       }
     }
 
-    // Só verificar grupos com mesmo tamanho
+    // Passo 2: Só processar grupos com 2+ ficheiros do mesmo tamanho
     var potentialDuplicates = sizeGroups.values
         .where((group) => group.length > 1)
         .toList();
 
     for (var group in potentialDuplicates) {
-      // Se tiverem o mesmo tamanho, são provavelmente duplicados
-      // Para confirmar, comparar thumbnails
+      // Passo 3: Comparar hash MD5 do CONTEÚDO REAL do ficheiro
       Map<String, List<MediaItem>> hashGroups = {};
 
       for (var item in group) {
         try {
-          final thumb = await item.asset.thumbnailDataWithSize(
-            const ThumbnailSize(50, 50), // Thumbnail pequeno = mais rápido
-            quality: 30,
-          );
-          
-          if (thumb != null) {
-            final hash = md5.convert(thumb).toString();
+          final file = await item.asset.file;
+          if (file != null && await file.exists()) {
+            final bytes = await file.readAsBytes();
+            final hash = md5.convert(bytes).toString();
             item.hash = hash;
             hashGroups.putIfAbsent(hash, () => []).add(item);
           }
         } catch (e) {
-          // Usar tamanho como "hash" se falhar
-          hashGroups.putIfAbsent('size_${item.size}', () => []).add(item);
+          // Se não conseguir ler o ficheiro, ignorar (NÃO agrupar como duplicado)
+          debugPrint('Erro ao ler ficheiro para hash: $e');
         }
       }
 
