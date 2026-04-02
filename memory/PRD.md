@@ -1,76 +1,59 @@
 # InstaClean PMC - Product Requirements Document
 
 ## Original Problem Statement
-Build a Flutter mobile application called "InstaClean PMC" - a phone storage cleaner that scans for duplicate files (photos, videos, screenshots, music) and allows users to delete them. The app must have a professional dark-themed UI, real file access using `photo_manager`, AdMob monetization, Firebase analytics, and be configured for Google Play Store release via Codemagic CI/CD.
+Flutter mobile app "InstaClean PMC" - a phone cleaner that finds and deletes duplicate files (photos, videos, screenshots). Monetized with Google AdMob, tracked with Firebase Analytics, built via Codemagic CI/CD, targeting Google Play Store release.
 
 ## User Personas
-- Android users who want to free up storage by removing duplicate files
-- Target market: Portuguese-speaking users (app UI in Portuguese)
+- Android users in Portuguese-speaking countries (Angola, Portugal, Brazil)
+- Non-technical users wanting to free storage space
 
 ## Core Requirements
-1. **Permissions Flow**: Request file access permissions from the user
-2. **Dashboard**: Main screen with storage gauge and scan button
-3. **File Scanning**: Scan device for photos, videos, screenshots, music
-4. **Duplicate Detection**: Identify duplicates via hash comparison (grouped by file size, then thumbnail hash)
-5. **Category Detail View**: Grid view for each category with manual file selection
-6. **File Deletion**: Delete selected files from device using `PhotoManager.editor.deleteWithIds()`
-7. **Branding**: App name "InstaClean PMC" with PMC branding
-8. **AdMob**: Banner and interstitial ads (currently using test IDs)
-9. **Firebase Analytics**: Integration placeholder (requires user's `google-services.json`)
-10. **Release Build**: AAB format signed for Google Play Store
+1. Dark-themed professional UI with dashboard gauge, permission flow, results, and category detail screens
+2. Real file scanning using `photo_manager` to find duplicates by hash comparison
+3. Categories: Photos, Screenshots, Videos (Music REMOVED as of Feb 2026)
+4. Screenshots: STRICT filter - only `.png`/`.jpg` from paths containing "Screenshots"
+5. Google AdMob (Banner + Interstitial) with UMP/GDPR consent
+6. Firebase Analytics tracking scan and cleaning events
+7. Codemagic CI/CD producing signed `.aab` for Play Store
+
+## What's Been Implemented (Completed)
+- [x] Codemagic CI/CD pipeline with signed `.aab` builds
+- [x] Dark theme UI: Permission, Dashboard, Results, CategoryDetail, Settings, PrivacyPolicy screens
+- [x] Real file scanning engine with `photo_manager` + `crypto` hash dedup
+- [x] AdMob integration (Banner + Interstitial) with real Ad Unit IDs
+- [x] UMP SDK (GDPR consent form) before ad loading
+- [x] Firebase Analytics (`scan_iniciado`, `scan_concluido`, `limpeza_concluida`, `permissao_concedida`)
+- [x] Professional app icon via `flutter_launcher_icons`
+- [x] R8/ProGuard rules for release build
+- [x] Keystore (`.jks`) created for release signing
+- [x] Privacy Policy + `app-ads.txt` hosted on GitHub Pages
+- [x] Google Play Console setup guidance (Data Safety, App Content, etc.)
+- [x] **Strict screenshot filtering** - only `.png`/`.jpg` from `/Screenshots/` path (Feb 2026)
+- [x] **Music feature completely removed** - enum, logic, UI, Android permissions (Feb 2026)
+- [x] **READ_MEDIA_AUDIO permission removed** from AndroidManifest.xml (Feb 2026)
+
+## AdMob Configuration
+- App ID: `ca-app-pub-2353019524746156~7848109235`
+- Banner Ad Unit: `ca-app-pub-2353019524746156/4464707500`
+- Interstitial Ad Unit: `ca-app-pub-2353019524746156/9525462496`
+- Publisher ID: `pub-2353019524746156`
+
+## Prioritized Backlog
+### P1
+- [ ] Verify AdMob 0% match rate issue (user needs to verify identity/PIN in AdMob console)
+- [ ] Guide user on Angola region selection in Play Console
+
+### P2
+- [ ] Complete 14-day closed testing period on Play Console
+- [ ] Promote from closed testing to production release
+
+### Future
+- [ ] User provides real `google-services.json` from Firebase (currently configured)
+- [ ] Monitor ad revenue and optimize ad placement
 
 ## Tech Stack
-- **Framework**: Flutter (Dart)
-- **CI/CD**: Codemagic
-- **Build System**: Android Gradle (AGP 8.7.0, Gradle 8.9, Kotlin 2.1.0)
-- **Key Packages**: `photo_manager ^3.0.0`, `google_mobile_ads ^4.0.0`, `permission_handler ^11.3.0`, `crypto ^3.0.3`
-- **Android Config**: compileSdk 36, targetSdk 35, minSdk 24, package `com.instaclean.pmc`
-
-## Architecture
-```
-/app/
-├── android/              # Native Android project
-├── lib/
-│   ├── main.dart         # App entry point, theme, routing
-│   ├── screens/
-│   │   ├── permission_screen.dart     # Permission request + UMP consent
-│   │   ├── dashboard_screen.dart      # Main screen with gauge + settings
-│   │   ├── results_screen.dart        # Cleaning categories
-│   │   ├── category_detail_screen.dart # File grid with selection/deletion
-│   │   ├── settings_screen.dart       # App settings
-│   │   └── privacy_policy_screen.dart # GDPR/RGPD privacy policy
-│   └── services/
-│       ├── cleaner_service.dart       # Core scan & clean logic
-│       ├── ad_service.dart            # AdMob + UMP/GDPR consent
-│       └── analytics_service.dart     # Firebase Analytics events
-├── assets/
-│   └── app_icon.png      # App launcher icon
-├── pubspec.yaml          # Dependencies
-└── codemagic.yaml        # CI/CD config
-```
-
-## What's Been Implemented
-- [x] Complete dark-themed UI (permission, dashboard, results, category detail screens)
-- [x] Real file scanning engine using `photo_manager`
-- [x] Duplicate detection (size-based grouping + thumbnail hash comparison)
-- [x] File deletion functionality via `PhotoManager.editor.deleteWithIds()`
-- [x] Category views: Photos, Screenshots, Videos, Music
-- [x] Manual file selection with grid view and thumbnails
-- [x] Branding: "InstaClean PMC"
-- [x] AdMob integration (real IDs - ca-app-pub-2353019524746156)
-- [x] Firebase Analytics with `limpeza_concluida` event tracking
-- [x] URL launcher for external privacy policy link
-- [x] Settings screen (Privacy Policy, Consent, Permissions)
-- [x] Custom app icon (blue shield + white broom) via flutter_launcher_icons
-- [x] Release signing config (Codemagic env vars + key.properties)
-- [x] ProGuard rules for release build
-- [x] Codemagic CI/CD pipeline (AAB + APK builds)
-- [x] Android native project structure (compileSdk 36, AGP 8.7.0)
-
-## Pending Items
-- [ ] **P1**: Configure keystore in Codemagic (upload keystore + set env vars)
-- [ ] **P2**: Google Play Store publication (after signed AAB is built)
-
-## Current Status
-- **Build Status**: Production-ready configuration
-- **Mocked**: None - All integrations use real credentials
+- Flutter/Dart
+- `photo_manager` v3.x, `google_mobile_ads` v4.0.0, `firebase_core`, `firebase_analytics`, `crypto`
+- Android Gradle Plugin 8.9.1, Gradle 8.12
+- Codemagic CI/CD
+- Package ID: `com.instaclean.pmc`

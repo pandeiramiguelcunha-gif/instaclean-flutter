@@ -487,8 +487,6 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen>
     switch (type) {
       case AssetType.video:
         return Icons.play_circle_filled;
-      case AssetType.audio:
-        return Icons.music_note;
       default:
         return Icons.image;
     }

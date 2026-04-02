@@ -25,7 +25,7 @@ class MediaItem {
   });
 }
 
-enum MediaCategory { photos, screenshots, videos, music }
+enum MediaCategory { photos, screenshots, videos }
 
 class CleanerService {
   static final CleanerService _instance = CleanerService._internal();
@@ -89,14 +89,12 @@ class CleanerService {
       MediaCategory.photos: [],
       MediaCategory.screenshots: [],
       MediaCategory.videos: [],
-      MediaCategory.music: [],
     };
 
     duplicates = {
       MediaCategory.photos: [],
       MediaCategory.screenshots: [],
       MediaCategory.videos: [],
-      MediaCategory.music: [],
     };
 
     try {
@@ -165,21 +163,25 @@ class CleanerService {
           // Categorizar
           if (asset.type == AssetType.video) {
             allMedia[MediaCategory.videos]!.add(mediaItem);
-          } else if (asset.type == AssetType.audio) {
-            allMedia[MediaCategory.music]!.add(mediaItem);
           } else if (asset.type == AssetType.image) {
-            // Verificar se é screenshot
+            // Filtro ESTRITO para screenshots:
+            // 1. Caminho DEVE conter "Screenshots" (ex: /Pictures/Screenshots/)
+            // 2. APENAS imagens .png ou .jpg (bloquear vídeos)
             final pathLower = relativePath.toLowerCase();
             final titleLower = title.toLowerCase();
             
-            if (pathLower.contains('screenshot') ||
-                pathLower.contains('captura') ||
-                titleLower.contains('screenshot') ||
-                titleLower.startsWith('img_') && titleLower.contains('_')) {
+            final isScreenshotPath = pathLower.contains('screenshot');
+            final isImageFile = titleLower.endsWith('.png') ||
+                titleLower.endsWith('.jpg') ||
+                titleLower.endsWith('.jpeg');
+            
+            if (isScreenshotPath && isImageFile) {
               allMedia[MediaCategory.screenshots]!.add(mediaItem);
-            } else {
+            } else if (!isScreenshotPath) {
+              // Só adicionar a fotos se NÃO estiver na pasta Screenshots
               allMedia[MediaCategory.photos]!.add(mediaItem);
             }
+            // Imagens na pasta Screenshots que não são .png/.jpg são ignoradas
           }
 
           processed++;
@@ -188,10 +190,6 @@ class CleanerService {
         final progress = 0.1 + (0.5 * processed / totalCount);
         onProgress?.call('Processados: $processed de $totalCount', progress);
       }
-
-      // Scan de áudio separado (para encontrar músicas)
-      onProgress?.call('A procurar músicas...', 0.6);
-      await _scanAudioFiles(onProgress);
 
       onProgress?.call('A procurar duplicados...', 0.7);
 
@@ -207,54 +205,6 @@ class CleanerService {
     } catch (e) {
       debugPrint('Erro no scan: $e');
       onProgress?.call('Erro: $e', 1.0);
-    }
-  }
-
-  // Scan específico para áudio
-  Future<void> _scanAudioFiles(Function(String, double)? onProgress) async {
-    try {
-      final List<AssetPathEntity> audioAlbums = await PhotoManager.getAssetPathList(
-        type: RequestType.audio,
-        hasAll: true,
-      );
-
-      for (var album in audioAlbums) {
-        final count = await album.assetCountAsync;
-        if (count == 0) continue;
-
-        final assets = await album.getAssetListRange(start: 0, end: count);
-
-        for (var asset in assets) {
-          final title = await asset.titleAsync ?? 'Música';
-          
-          int fileSize = 0;
-          try {
-            final file = await asset.file;
-            if (file != null) {
-              fileSize = await file.length();
-            }
-          } catch (e) {
-            fileSize = 3 * 1024 * 1024; // 3MB estimativa
-          }
-
-          final mediaItem = MediaItem(
-            asset: asset,
-            id: asset.id,
-            title: title,
-            size: fileSize,
-            createDate: asset.createDateTime,
-            type: asset.type,
-          );
-
-          // Verificar se já não existe
-          final exists = allMedia[MediaCategory.music]!.any((m) => m.id == asset.id);
-          if (!exists) {
-            allMedia[MediaCategory.music]!.add(mediaItem);
-          }
-        }
-      }
-    } catch (e) {
-      debugPrint('Erro ao scan de áudio: $e');
     }
   }
 

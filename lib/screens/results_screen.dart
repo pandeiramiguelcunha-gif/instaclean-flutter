@@ -210,12 +210,6 @@ class _ResultsScreenState extends State<ResultsScreen> {
                     Icons.videocam,
                     const Color(0xFFFF9800),
                   ),
-                  _buildCategoryTile(
-                    MediaCategory.music,
-                    'Músicas',
-                    Icons.music_note,
-                    const Color(0xFFE91E63),
-                  ),
                 ],
               ),
             ),
